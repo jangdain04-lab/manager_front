@@ -1,240 +1,292 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, Modal,
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Rect, Text as SvgText, Circle } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
-import { Colors, getRiskColor } from '../../components/Colors';
+import { Colors } from '../../components/Colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const MAP_WIDTH = SCREEN_WIDTH - 48;
-const MAP_HEIGHT = 300;
-const SCALE_X = MAP_WIDTH / 500;
-const SCALE_Y = MAP_HEIGHT / 450;
-
-interface SectorData {
-  id: string;
-  name: string;
-  label: string;
-  x: number; y: number; w: number; h: number;
-  density: number;
-  level: 'safe' | 'warning' | 'critical';
-  staffCount: number;
-}
-
-interface StaffMember {
-  id: string; name: string; sector: string; x: number; y: number;
-}
-
-const SECTORS: SectorData[] = [
-  { id: 'a', name: 'Sector A', label: 'A', x: 20, y: 80, w: 140, h: 160, density: 88, level: 'critical', staffCount: 2 },
-  { id: 'b', name: 'Sector B', label: 'B', x: 180, y: 80, w: 140, h: 160, density: 45, level: 'safe', staffCount: 4 },
-  { id: 'c', name: 'Sector C', label: 'C', x: 340, y: 80, w: 140, h: 160, density: 72, level: 'warning', staffCount: 3 },
-  { id: 'd', name: 'Sector D', label: 'D', x: 20, y: 260, w: 220, h: 160, density: 38, level: 'safe', staffCount: 3 },
-  { id: 'e', name: 'Sector E', label: 'E', x: 260, y: 260, w: 220, h: 160, density: 62, level: 'warning', staffCount: 2 },
+const ZONES = [
+  {
+    id: 'A',
+    name: '백년관 버정길',
+    count: 51,
+    level: 'danger',
+    color: '#D0453B',
+    bg: '#E9B8B8',
+    staff: 1,
+  },
+  {
+    id: 'B',
+    name: '자연과학대 앞',
+    count: 28,
+    level: 'safe',
+    color: '#4FA85D',
+    bg: '#D8EBDC',
+    staff: 3,
+  },
+  {
+    id: 'C',
+    name: '공대 흡연부스 옆',
+    count: 37,
+    level: 'warning',
+    color: '#E5A331',
+    bg: '#F3E5CC',
+    staff: 2,
+  },
+  {
+    id: 'D',
+    name: '인경관 주차장 입구',
+    count: 17,
+    level: 'safe',
+    color: '#4FA85D',
+    bg: '#D8EBDC',
+    staff: 2,
+  },
+  {
+    id: 'E',
+    name: '공대-백년관 사이',
+    count: 33,
+    level: 'warning',
+    color: '#E5A331',
+    bg: '#F3E5CC',
+    staff: 2,
+  },
+  {
+    id: 'F',
+    name: '백년관 잔디구장',
+    count: 24,
+    level: 'safe',
+    color: '#4FA85D',
+    bg: '#D8EBDC',
+    staff: 3,
+  },
 ];
 
-const STAFF: StaffMember[] = [
-  { id: 's1', name: '김철수', sector: 'a', x: 60, y: 140 },
-  { id: 's2', name: '이영희', sector: 'a', x: 110, y: 180 },
-  { id: 's3', name: '박민수', sector: 'b', x: 220, y: 120 },
-  { id: 's4', name: '정수진', sector: 'b', x: 270, y: 160 },
-  { id: 's5', name: '최동욱', sector: 'b', x: 230, y: 200 },
-  { id: 's6', name: '한지민', sector: 'b', x: 285, y: 130 },
-  { id: 's7', name: '강태양', sector: 'c', x: 380, y: 140 },
-  { id: 's8', name: '송미래', sector: 'c', x: 430, y: 180 },
-  { id: 's9', name: '윤서준', sector: 'c', x: 395, y: 210 },
-  { id: 's10', name: '임하늘', sector: 'd', x: 100, y: 320 },
-  { id: 's11', name: '오바다', sector: 'd', x: 160, y: 360 },
-  { id: 's12', name: '신별이', sector: 'd', x: 130, y: 380 },
-  { id: 's13', name: '남구름', sector: 'e', x: 320, y: 310 },
-  { id: 's14', name: '홍달님', sector: 'e', x: 410, y: 350 },
+const STAFF_GROUPS = [
+  {
+    zone: '백년관 버정길',
+    count: 1,
+    status: 'danger',
+    members: [{ name: '김민수', role: '안전관리' }],
+  },
+  {
+    zone: '자연과학대 앞',
+    count: 3,
+    status: 'safe',
+    members: [
+      { name: '이지은', role: '안전관리' },
+      { name: '박준호', role: '의료지원' },
+      { name: '최수진', role: '안전관리' },
+    ],
+  },
+  {
+    zone: '공대 흡연부스 옆',
+    count: 2,
+    status: 'warning',
+    members: [
+      { name: '정다운', role: '안전관리' },
+      { name: '강태영', role: '의료지원' },
+    ],
+  },
+  {
+    zone: '인경관 주차장 입구',
+    count: 2,
+    status: 'safe',
+    members: [
+      { name: '윤서연', role: '안전관리' },
+      { name: '한지훈', role: '안전관리' },
+    ],
+  },
+  {
+    zone: '공대-백년관 사이',
+    count: 2,
+    status: 'danger',
+    members: [
+      { name: '임유진', role: '의료지원' },
+      { name: '송민재', role: '안전관리' },
+    ],
+  },
+  {
+    zone: '백년관 잔디구장',
+    count: 3,
+    status: 'safe',
+    members: [
+      { name: '조서영', role: '안전관리' },
+      { name: '배현우', role: '의료지원' },
+      { name: '류지민', role: '안전관리' },
+    ],
+  },
 ];
 
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+const getStatusColor = (status: string) => {
+  if (status === 'danger') return '#D0453B';
+  if (status === 'warning') return '#E5A331';
+  return '#4FA85D';
 };
 
 export default function InteractiveMap() {
-  const navigation = useNavigation();
-  const [selectedSector, setSelectedSector] = useState<string | null>(null);
-
-  const selected = SECTORS.find(s => s.id === selectedSector);
-  const staffInSector = selectedSector ? STAFF.filter(s => s.sector === selectedSector) : [];
-
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>인력 배치 현황</Text>
-          <Text style={styles.subtitle}>실시간 구역별 스태프 위치</Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{STAFF.length}</Text>
-            <Text style={styles.statLabel}>전체 인원</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: Colors.danger }]}>
-              {SECTORS.filter(s => s.level === 'critical').length}
-            </Text>
-            <Text style={styles.statLabel}>위험 구역</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: Colors.warning }]}>
-              {SECTORS.filter(s => s.level === 'warning').length}
-            </Text>
-            <Text style={styles.statLabel}>주의 구역</Text>
-          </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>인력 관리</Text>
+          <Text style={styles.subtitle}>실시간 히트맵 및 배치 조정</Text>
         </View>
 
-        {/* Map */}
-        <View style={styles.mapContainer}>
-          <Text style={styles.mapTitle}>구역 배치도</Text>
-          <Text style={styles.mapSubtitle}>구역을 탭하면 상세 정보를 확인할 수 있습니다</Text>
-          <View style={styles.mapWrapper}>
-            <Svg width={MAP_WIDTH} height={MAP_HEIGHT} viewBox="0 0 500 450">
-              {/* Background */}
-              <Rect x="0" y="0" width="500" height="450" fill="#F8F9FA" rx="12" />
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>실시간 히트맵</Text>
 
-              {/* Sectors */}
-              {SECTORS.map(s => {
-                const color = getRiskColor(s.level);
-                const isSelected = selectedSector === s.id;
-                return (
-                  <React.Fragment key={s.id}>
-                    <Rect
-                      x={s.x} y={s.y} width={s.w} height={s.h}
-                      fill={hexToRgba(color, 0.15)}
-                      stroke={color}
-                      strokeWidth={isSelected ? 3 : 1.5}
-                      rx="8"
-                      onPress={() => setSelectedSector(isSelected ? null : s.id)}
-                    />
-                    <SvgText
-                      x={s.x + s.w / 2} y={s.y + 30}
-                      fill={color} fontSize="22" fontWeight="800"
-                      textAnchor="middle"
-                    >
-                      {s.label}
-                    </SvgText>
-                    <SvgText
-                      x={s.x + s.w / 2} y={s.y + 50}
-                      fill={color} fontSize="11"
-                      textAnchor="middle"
-                    >
-                      {s.density}%
-                    </SvgText>
-                  </React.Fragment>
-                );
-              })}
+          <View style={styles.heatmapCard}>
+            <View style={styles.grid}>
+              {ZONES.map(zone => (
+                <View
+                  key={zone.id}
+                  style={[styles.zoneCard, { backgroundColor: zone.bg }]}
+                >
+                  <Text style={[styles.zoneName, { color: zone.color }]}>
+                    {zone.name}
+                  </Text>
 
-              {/* Staff dots */}
-              {STAFF.map(member => {
-                const sector = SECTORS.find(s => s.id === member.sector);
-                const color = sector ? getRiskColor(sector.level) : Colors.primary;
-                return (
-                  <Circle
-                    key={member.id}
-                    cx={member.x} cy={member.y}
-                    r="8" fill={color} opacity={0.9}
-                  />
-                );
-              })}
-            </Svg>
-          </View>
+                  <Text style={styles.zoneCount}>{zone.count}명</Text>
 
-          {/* Legend */}
-          <View style={styles.legend}>
-            {[['critical', '위험'], ['warning', '주의'], ['safe', '안전']].map(([level, label]) => (
-              <View key={level} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: getRiskColor(level) }]} />
-                <Text style={styles.legendText}>{label}</Text>
-              </View>
-            ))}
-            <View style={styles.legendItem}>
-              <Circle />
-              <Ionicons name="person" size={12} color={Colors.primary} />
-              <Text style={styles.legendText}>스태프</Text>
-            </View>
-          </View>
-        </View>
+                  <View style={styles.staffDots}>
+                    {Array.from({ length: zone.staff }).map((_, idx) => (
+                      <View key={idx} style={styles.staffDot}>
+                        <Ionicons name="person" size={8} color="#5B73F2" />
+                      </View>
+                    ))}
+                  </View>
 
-        {/* Selected Sector Detail */}
-        {selected && (
-          <View style={[styles.detailCard, { borderColor: getRiskColor(selected.level) }]}>
-            <View style={styles.detailHeader}>
-              <Text style={[styles.detailTitle, { color: getRiskColor(selected.level) }]}>
-                {selected.name}
-              </Text>
-              <TouchableOpacity onPress={() => setSelectedSector(null)}>
-                <Ionicons name="close-circle" size={22} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.detailStats}>
-              <View style={styles.detailStat}>
-                <Text style={styles.detailStatValue}>{selected.density}%</Text>
-                <Text style={styles.detailStatLabel}>밀집도</Text>
-              </View>
-              <View style={styles.detailStat}>
-                <Text style={styles.detailStatValue}>{selected.staffCount}명</Text>
-                <Text style={styles.detailStatLabel}>배치 인원</Text>
-              </View>
-            </View>
-            {selected.level === 'critical' && (
-              <View style={styles.warningBox}>
-                <Ionicons name="warning" size={16} color={Colors.danger} />
-                <Text style={styles.warningText}>위험 구역입니다. 즉시 추가 인력 배치를 권고합니다.</Text>
-              </View>
-            )}
-            <Text style={styles.staffListTitle}>배치 스태프</Text>
-            {staffInSector.map(staff => (
-              <View key={staff.id} style={styles.staffItem}>
-                <View style={[styles.staffIcon, { backgroundColor: getRiskColor(selected.level) + '22' }]}>
-                  <Ionicons name="person" size={14} color={getRiskColor(selected.level)} />
+                  <View style={styles.staffBadge}>
+                    <Ionicons name="people-outline" size={11} color="#5B73F2" />
+                    <Text style={styles.staffBadgeText}>{zone.staff}명</Text>
+                  </View>
                 </View>
-                <Text style={styles.staffName}>{staff.name}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        )}
 
-        {/* Sector List */}
-        <View style={styles.sectorList}>
-          <Text style={styles.sectionTitle}>구역별 현황</Text>
-          {SECTORS.map(s => (
-            <TouchableOpacity
-              key={s.id}
-              style={[styles.sectorItem, selectedSector === s.id && { borderColor: getRiskColor(s.level) }]}
-              onPress={() => setSelectedSector(selectedSector === s.id ? null : s.id)}
-            >
-              <View style={[styles.sectorBadge, { backgroundColor: getRiskColor(s.level) }]}>
-                <Text style={styles.sectorBadgeText}>{s.label}</Text>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#4FA85D' }]} />
+              <Text style={styles.legendText}>여유</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#E5A331' }]} />
+              <Text style={styles.legendText}>주의</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#D0453B' }]} />
+              <Text style={styles.legendText}>위험</Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>권장 인력 재배치</Text>
+            <View style={styles.urgentBadge}>
+              <Text style={styles.urgentText}>긴급</Text>
+            </View>
+          </View>
+
+          <View style={styles.reassignCard}>
+            <View style={styles.reassignHeader}>
+              <View style={styles.warningIcon}>
+                <Ionicons name="warning-outline" size={24} color="white" />
               </View>
-              <View style={styles.sectorInfo}>
-                <Text style={styles.sectorName}>{s.name}</Text>
-                <Text style={styles.sectorMeta}>{s.staffCount}명 배치 · 밀집도 {s.density}%</Text>
-              </View>
-              <View style={[styles.levelPill, { backgroundColor: getRiskColor(s.level) + '22' }]}>
-                <Text style={[styles.levelPillText, { color: getRiskColor(s.level) }]}>
-                  {s.level === 'critical' ? '위험' : s.level === 'warning' ? '주의' : '안전'}
+
+              <View>
+                <Text style={styles.reassignTitle}>인력 재배치 필요</Text>
+                <Text style={styles.reassignSubtitle}>
+                  백년관 버정길 위험 수준 감지
                 </Text>
               </View>
+            </View>
+
+            <View style={styles.reassignBody}>
+              <View style={[styles.routeBox, styles.fromBox]}>
+                <Text style={styles.routeLabelBlue}>출발 구역</Text>
+                <Text style={styles.routeTitle}>자연과학대 앞</Text>
+                <Text style={styles.routeSub}>3명 배치</Text>
+              </View>
+
+              <View style={styles.arrowBox}>
+                <Ionicons name="arrow-forward" size={26} color="#5B73F2" />
+                <Text style={styles.moveCount}>2명</Text>
+              </View>
+
+              <View style={[styles.routeBox, styles.toBox]}>
+                <Text style={styles.routeLabelRed}>도착 구역</Text>
+                <Text style={styles.routeTitle}>백년관 버정길</Text>
+                <Text style={styles.routeSub}>1명 배치</Text>
+              </View>
+            </View>
+
+            <View style={styles.changeBox}>
+              <View style={styles.changeItem}>
+                <Text style={styles.changeLabel}>현재 인력</Text>
+                <Text style={styles.beforeNum}>1명</Text>
+              </View>
+
+              <Ionicons name="arrow-forward" size={24} color={Colors.textSecondary} />
+
+              <View style={styles.changeItem}>
+                <Text style={styles.changeLabel}>재배치 후</Text>
+                <Text style={styles.afterNum}>3명</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity activeOpacity={0.85} style={styles.actionButton}>
+              <Ionicons name="people-outline" size={21} color="white" />
+              <Text style={styles.actionButtonText}>재배치 실행</Text>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>전체 인력 관리</Text>
+            <TouchableOpacity activeOpacity={0.85} style={styles.addButton}>
+              <Ionicons name="add" size={28} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {STAFF_GROUPS.map(group => (
+            <View key={group.zone} style={styles.staffGroupCard}>
+              <View style={styles.staffGroupHeader}>
+                <View style={styles.staffGroupTitleWrap}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: getStatusColor(group.status) },
+                    ]}
+                  />
+                  <Text style={styles.staffGroupTitle}>{group.zone}</Text>
+                  <Text style={styles.staffGroupCount}>({group.count}명)</Text>
+                </View>
+
+                <TouchableOpacity>
+                  <Ionicons name="pencil-outline" size={22} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              {group.members.map(member => (
+                <View key={member.name} style={styles.memberCard}>
+                  <View style={styles.avatar}>
+                    <Ionicons name="person-circle-outline" size={32} color="#5B73F2" />
+                  </View>
+
+                  <View>
+                    <Text style={styles.memberName}>{member.name}</Text>
+                    <Text style={styles.memberRole}>{member.role}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -242,46 +294,383 @@ export default function InteractiveMap() {
   );
 }
 
+const PRIMARY = '#5B73F2';
+const DANGER = '#D0453B';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '800', color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textSecondary },
-  statsRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', color: Colors.text },
-  statLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  statDivider: { width: 1, height: 32, backgroundColor: Colors.border },
-  mapContainer: { paddingHorizontal: 24, paddingTop: 20 },
-  mapTitle: { fontSize: 17, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  mapSubtitle: { fontSize: 12, color: Colors.textSecondary, marginBottom: 12 },
-  mapWrapper: { borderRadius: 16, overflow: 'hidden', backgroundColor: Colors.background },
-  legend: { flexDirection: 'row', gap: 16, marginTop: 12, marginBottom: 8 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendText: { fontSize: 12, color: Colors.textSecondary },
-  detailCard: { marginHorizontal: 24, marginTop: 16, borderRadius: 16, padding: 16, borderWidth: 2, backgroundColor: Colors.background },
-  detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  detailTitle: { fontSize: 18, fontWeight: '800' },
-  detailStats: { flexDirection: 'row', gap: 20, marginBottom: 12 },
-  detailStat: { alignItems: 'center' },
-  detailStatValue: { fontSize: 20, fontWeight: '800', color: Colors.text },
-  detailStatLabel: { fontSize: 12, color: Colors.textSecondary },
-  warningBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.dangerLight, borderRadius: 10, padding: 10, marginBottom: 12 },
-  warningText: { flex: 1, fontSize: 13, color: Colors.danger },
-  staffListTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 8 },
-  staffItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-  staffIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  staffName: { fontSize: 14, color: Colors.text },
-  sectorList: { paddingHorizontal: 24, paddingTop: 20 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.text, marginBottom: 12 },
-  sectorItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.background, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1.5, borderColor: 'transparent' },
-  sectorBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  sectorBadgeText: { color: Colors.white, fontWeight: '800', fontSize: 14 },
-  sectorInfo: { flex: 1 },
-  sectorName: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  sectorMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  levelPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-  levelPillText: { fontSize: 12, fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  scrollContent: {
+    paddingBottom: 110,
+  },
+  header: {
+    paddingHorizontal: 28,
+    paddingTop: 76,
+    paddingBottom: 30,
+    backgroundColor: Colors.white,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.text,
+    letterSpacing: -0.8,
+  },
+  subtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  content: {
+    paddingHorizontal: 24,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: Colors.text,
+    letterSpacing: -0.35,
+  },
+  heatmapCard: {
+    marginTop: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 22,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  zoneCard: {
+    width: '31.5%',
+    height: 100,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingTop: 12,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  zoneName: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  zoneCount: {
+    fontSize: 12,
+    color: Colors.text,
+    fontWeight: '700',
+  },
+  staffDots: {
+    position: 'absolute',
+    bottom: 26,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  staffDot: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#5B73F2',
+  },
+  staffBadge: {
+    position: 'absolute',
+    bottom: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  staffBadgeText: {
+    fontSize: 10,
+    color: PRIMARY,
+    fontWeight: '900',
+  },
+
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 18,
+    marginTop: 14,
+    marginBottom: 26,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
+
+  sectionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  urgentBadge: {
+    backgroundColor: DANGER,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  urgentText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+
+  reassignCard: {
+    borderWidth: 1.5,
+    borderColor: DANGER,
+    backgroundColor: '#FFF3F3',
+    borderRadius: 18,
+    marginBottom: 28,
+    overflow: 'hidden',
+    shadowColor: DANGER,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  reassignHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5CFCF',
+  },
+  warningIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: DANGER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reassignTitle: {
+    fontSize: 17,
+    color: Colors.text,
+    fontWeight: '900',
+  },
+  reassignSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: DANGER,
+    fontWeight: '800',
+  },
+  reassignBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  routeBox: {
+    flex: 1,
+    height: 92,
+    borderRadius: 16,
+    padding: 12,
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  fromBox: {
+    borderWidth: 1.5,
+    borderColor: PRIMARY,
+    backgroundColor: '#F2F6FF',
+  },
+  toBox: {
+    borderWidth: 1.5,
+    borderColor: DANGER,
+    backgroundColor: '#FFF8F8',
+  },
+  routeLabelBlue: {
+    fontSize: 11,
+    color: PRIMARY,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  routeLabelRed: {
+    fontSize: 11,
+    color: DANGER,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  routeTitle: {
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  routeSub: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
+  arrowBox: {
+    width: 62,
+    alignItems: 'center',
+  },
+  moveCount: {
+    marginTop: 5,
+    fontSize: 12,
+    color: DANGER,
+    fontWeight: '900',
+  },
+  changeBox: {
+    marginHorizontal: 18,
+    marginBottom: 18,
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  changeItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  changeLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  beforeNum: {
+    fontSize: 24,
+    color: DANGER,
+    fontWeight: '900',
+  },
+  afterNum: {
+    fontSize: 24,
+    color: PRIMARY,
+    fontWeight: '900',
+  },
+  actionButton: {
+    marginHorizontal: 18,
+    marginBottom: 18,
+    height: 54,
+    borderRadius: 15,
+    backgroundColor: PRIMARY,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: PRIMARY,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  actionButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: PRIMARY,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: PRIMARY,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  staffGroupCard: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: Colors.white,
+  },
+  staffGroupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  staffGroupTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  staffGroupTitle: {
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '900',
+  },
+  staffGroupCount: {
+    marginLeft: 6,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
+  memberCard: {
+    marginTop: 12,
+    backgroundColor: Colors.background,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberName: {
+    fontSize: 15,
+    color: Colors.text,
+    fontWeight: '900',
+  },
+  memberRole: {
+    marginTop: 3,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
 });

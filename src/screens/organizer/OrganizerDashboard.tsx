@@ -139,7 +139,7 @@ export default function OrganizerDashboard() {
                             : '#D9EBDC',
                     },
                   ]}
-                  onPress={() => navigation.navigate('SectorMonitoring', { sectorId: item.id })}
+                  onPress={() => navigation.navigate('SectorMonitoring', { showAllGraphs: true })}
                 >
                   <Text style={[styles.heatmapLabel, { color }]}>{item.label}</Text>
                   <Text style={styles.heatmapCount}>{item.count}명</Text>
