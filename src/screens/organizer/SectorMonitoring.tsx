@@ -9,13 +9,19 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import { Colors } from '../../components/Colors';
 
 const THEME = {
   primary: '#55CCC4',
   primaryLight: '#EFFFFD',
   dark: '#111827',
+  safe: '#16A34A',
+  warning: '#F59E0B',
+  danger: '#EF4444',
 };
+
+const MAP_URL = 'https://generous-maternity-smugness.ngrok-free.dev/map.html';
 
 type Staff = {
   name: string;
@@ -26,20 +32,25 @@ type Staff = {
 type Sector = {
   id: number;
   title: string;
+  count: number;
   status: 'danger' | 'safe' | 'warning';
   people: Staff[];
 };
+
+type HeatmapMode = 'summary' | 'map';
 
 const initialSectorStaff: Sector[] = [
   {
     id: 1,
     title: '백년관 버정길',
+    count: 53,
     status: 'danger',
     people: [{ name: '김민수', role: '안전관리', sector: '백년관 버정길' }],
   },
   {
     id: 2,
     title: '자연과학대 앞',
+    count: 28,
     status: 'safe',
     people: [
       { name: '이지은', role: '안전관리', sector: '자연과학대 앞' },
@@ -50,6 +61,7 @@ const initialSectorStaff: Sector[] = [
   {
     id: 3,
     title: '공대 흡연부스 옆',
+    count: 35,
     status: 'warning',
     people: [
       { name: '정다운', role: '안전관리', sector: '공대 흡연부스 옆' },
@@ -59,6 +71,7 @@ const initialSectorStaff: Sector[] = [
   {
     id: 4,
     title: '인경관 주차장 입구',
+    count: 16,
     status: 'safe',
     people: [
       { name: '윤서연', role: '안전관리', sector: '인경관 주차장 입구' },
@@ -68,7 +81,8 @@ const initialSectorStaff: Sector[] = [
   {
     id: 5,
     title: '공대-백년관 사이',
-    status: 'warning',
+    count: 44,
+    status: 'danger',
     people: [
       { name: '임유진', role: '의료지원', sector: '공대-백년관 사이' },
       { name: '송민재', role: '안전관리', sector: '공대-백년관 사이' },
@@ -77,6 +91,7 @@ const initialSectorStaff: Sector[] = [
   {
     id: 6,
     title: '백년관 잔디구장',
+    count: 15,
     status: 'safe',
     people: [
       { name: '조서영', role: '안전관리', sector: '백년관 잔디구장' },
@@ -102,10 +117,29 @@ const allStaff: Staff[] = [
   { name: '류지민', role: '안전관리', sector: '백년관 잔디구장' },
 ];
 
+function getLevelLabel(status: Sector['status']) {
+  if (status === 'danger') return '위험';
+  if (status === 'warning') return '주의';
+  return '여유';
+}
+
+function getLevelColor(status: Sector['status']) {
+  if (status === 'danger') return THEME.danger;
+  if (status === 'warning') return THEME.warning;
+  return THEME.safe;
+}
+
+function getLevelBg(status: Sector['status']) {
+  if (status === 'danger') return '#FEE2E2';
+  if (status === 'warning') return '#FEF3C7';
+  return '#DCFCE7';
+}
+
 export default function SectorMonitoring() {
   const [sectors, setSectors] = useState<Sector[]>(initialSectorStaff);
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('summary');
 
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ?? null;
@@ -124,13 +158,7 @@ export default function SectorMonitoring() {
         sector.id === selectedSector.id
           ? {
               ...sector,
-              people: [
-                ...sector.people,
-                {
-                  ...staff,
-                  sector: selectedSector.title,
-                },
-              ],
+              people: [...sector.people, { ...staff, sector: selectedSector.title }],
             }
           : sector
       )
@@ -164,9 +192,7 @@ export default function SectorMonitoring() {
           <View style={styles.detailSectionHeader}>
             <Text style={styles.detailSectionTitle}>현재 섹터 인원</Text>
             <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>
-                {selectedSector.people.length}명
-              </Text>
+              <Text style={styles.countBadgeText}>{selectedSector.people.length}명</Text>
             </View>
           </View>
 
@@ -185,6 +211,7 @@ export default function SectorMonitoring() {
                   <View style={styles.detailPersonIcon}>
                     <Ionicons name="person-circle-outline" size={34} color="#8E98A8" />
                   </View>
+
                   <View>
                     <Text style={styles.detailPersonName}>{person.name}</Text>
                     <Text style={styles.detailPersonRole}>{person.role}</Text>
@@ -212,15 +239,8 @@ export default function SectorMonitoring() {
 
             return (
               <View key={`${staff.name}-${index}`} style={styles.staffListCard}>
-                <View
-                  style={[
-                    styles.checkBox,
-                    alreadyAdded && styles.checkBoxSelected,
-                  ]}
-                >
-                  {alreadyAdded && (
-                    <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                  )}
+                <View style={[styles.checkBox, alreadyAdded && styles.checkBoxSelected]}>
+                  {alreadyAdded && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
                 </View>
 
                 <View style={styles.listPersonIcon}>
@@ -266,235 +286,296 @@ export default function SectorMonitoring() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.title}>인력 관리</Text>
-        <Text style={styles.subtitle}>실시간 히트맵 및 배치 조정</Text>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.sectionTitle}>실시간 히트맵</Text>
-
-        <View style={styles.heatmapCard}>
-          <View style={styles.heatmapGrid}>
-            <View style={[styles.heatmapItem, { backgroundColor: '#F3D3D3' }]}>
-              <Text style={[styles.heatmapName, { color: '#E93035' }]}>백년관 버정길</Text>
-              <Text style={styles.heatmapCount}>51명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>1명</Text>
-              </View>
-            </View>
-
-            <View style={[styles.heatmapItem, { backgroundColor: '#D9EBDC' }]}>
-              <Text style={[styles.heatmapName, { color: '#16A34A' }]}>자연과학대 앞</Text>
-              <Text style={styles.heatmapCount}>28명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>3명</Text>
-              </View>
-            </View>
-
-            <View style={[styles.heatmapItem, { backgroundColor: '#F7EBD2' }]}>
-              <Text style={[styles.heatmapName, { color: '#F59E0B' }]}>공대 흡연부스 옆</Text>
-              <Text style={styles.heatmapCount}>37명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>2명</Text>
-              </View>
-            </View>
-
-            <View style={[styles.heatmapItem, { backgroundColor: '#D9EBDC' }]}>
-              <Text style={[styles.heatmapName, { color: '#16A34A' }]}>인경관 주차장 입구</Text>
-              <Text style={styles.heatmapCount}>17명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>2명</Text>
-              </View>
-            </View>
-
-            <View style={[styles.heatmapItem, { backgroundColor: '#F7EBD2' }]}>
-              <Text style={[styles.heatmapName, { color: '#F59E0B' }]}>공대-백년관 사이</Text>
-              <Text style={styles.heatmapCount}>33명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>2명</Text>
-              </View>
-            </View>
-
-            <View style={[styles.heatmapItem, { backgroundColor: '#D9EBDC' }]}>
-              <Text style={[styles.heatmapName, { color: '#16A34A' }]}>백년관 잔디구장</Text>
-              <Text style={styles.heatmapCount}>24명</Text>
-              <View style={styles.peopleRow}>
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-                <Ionicons name="person-circle-outline" size={28} color={THEME.primary} />
-              </View>
-              <View style={styles.staffBadge}>
-                <Ionicons name="people-outline" size={14} color={THEME.primary} />
-                <Text style={styles.staffBadgeText}>3명</Text>
-              </View>
-            </View>
-          </View>
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>인력 관리</Text>
+          <Text style={styles.subtitle}>실시간 히트맵 및 배치 조정</Text>
         </View>
 
-        <View style={styles.legendRow}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#16A34A' }]} />
-            <Text style={styles.legendText}>여유</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-            <Text style={styles.legendText}>주의</Text>
-          </View>
-
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#E93035' }]} />
-            <Text style={styles.legendText}>위험</Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>권장 인력 재배치</Text>
-          <View style={styles.urgentBadge}>
-            <Text style={styles.urgentBadgeText}>긴급</Text>
-          </View>
-        </View>
-
-        <View style={styles.relocationCard}>
-          <View style={styles.relocationTop}>
-            <View style={styles.relocationIcon}>
-              <Ionicons name="warning-outline" size={36} color="#FFFFFF" />
-            </View>
-
-            <View style={styles.relocationTextBlock}>
-              <Text style={styles.relocationTitle}>인력 재배치 필요</Text>
-              <Text style={styles.relocationSubtitle}>백년관 버정길 위험 수준 감지</Text>
-            </View>
-          </View>
-
-          <View style={styles.relocationDivider} />
-
-          <View style={styles.routeRow}>
-            <View style={styles.fromBox}>
-              <Text style={styles.routeLabelMint}>출발 구역</Text>
-              <Text style={styles.routePlace}>자연과학대 앞</Text>
-              <Text style={styles.routeStaff}>3명 배치</Text>
-            </View>
-
-            <View style={styles.arrowBlock}>
-              <Ionicons name="arrow-forward" size={42} color={THEME.primary} />
-              <Text style={styles.moveCount}>2명</Text>
-            </View>
-
-            <View style={styles.toBox}>
-              <Text style={styles.routeLabelDanger}>도착 구역</Text>
-              <Text style={styles.routePlace}>백년관 버정길</Text>
-              <Text style={styles.routeStaff}>1명 배치</Text>
-            </View>
-          </View>
-
-          <View style={styles.staffChangeBox}>
-            <View style={styles.staffChangeItem}>
-              <Text style={styles.staffChangeLabel}>현재 인력</Text>
-              <Text style={styles.currentStaff}>1명</Text>
-            </View>
-
-            <Ionicons name="arrow-forward" size={34} color="#9CA3AF" />
-
-            <View style={styles.staffChangeItem}>
-              <Text style={styles.staffChangeLabel}>재배치 후</Text>
-              <Text style={styles.afterStaff}>3명</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity activeOpacity={0.85} style={styles.applyButton}>
-            <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
-            <Text style={styles.applyButtonText}>재배치 적용하기</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.staffSectionHeader}>
-          <Text style={styles.staffSectionTitle}>전체 인력 관리</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.addButton}
-            onPress={() => setAddModalVisible(true)}
-          >
-            <Ionicons name="add" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {sectors.map((section) => (
-          <View key={section.id} style={styles.staffCard}>
-            <View style={styles.staffCardHeader}>
-              <View style={styles.staffTitleRow}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    section.status === 'danger'
-                      ? styles.dangerDot
-                      : section.status === 'warning'
-                        ? styles.warningDot
-                        : styles.safeDot,
-                  ]}
-                />
-                <Text style={styles.staffLocation}>{section.title}</Text>
-                <Text style={styles.staffCount}>({section.people.length}명)</Text>
-              </View>
-
-              <TouchableOpacity
-                activeOpacity={0.75}
-                style={styles.editButton}
-                onPress={() => setSelectedSectorId(section.id)}
+        <View style={styles.content}>
+          <View style={styles.modeToggle}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.modeButton,
+                heatmapMode === 'summary' && styles.modeButtonActive,
+              ]}
+              onPress={() => setHeatmapMode('summary')}
+            >
+              <Ionicons
+                name="grid-outline"
+                size={18}
+                color={heatmapMode === 'summary' ? '#FFFFFF' : '#8B95A1'}
+              />
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  heatmapMode === 'summary' && styles.modeButtonTextActive,
+                ]}
               >
-                <Ionicons name="pencil-outline" size={24} color="#9AA3B2" />
-              </TouchableOpacity>
-            </View>
+                요약 히트맵
+              </Text>
+            </TouchableOpacity>
 
-            {section.people.map((person, index) => (
-              <View key={`${person.name}-${index}`} style={styles.personBox}>
-                <View style={styles.personIconBox}>
-                  <Ionicons
-                    name="person-circle-outline"
-                    size={34}
-                    color={THEME.primary}
-                  />
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.modeButton,
+                heatmapMode === 'map' && styles.modeButtonActive,
+              ]}
+              onPress={() => setHeatmapMode('map')}
+            >
+              <Ionicons
+                name="map-outline"
+                size={18}
+                color={heatmapMode === 'map' ? '#FFFFFF' : '#8B95A1'}
+              />
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  heatmapMode === 'map' && styles.modeButtonTextActive,
+                ]}
+              >
+                지도 히트맵
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.sectionTitle}>
+            {heatmapMode === 'summary' ? '실시간 히트맵' : '실시간 지도 히트맵'}
+          </Text>
+
+          {heatmapMode === 'summary' ? (
+            <View style={styles.homeHeatmapCard}>
+              <View style={styles.homeHeatmapGrid}>
+                {sectors.map((sector) => (
+                  <View
+                    key={sector.id}
+                    style={[
+                      styles.homeHeatmapItem,
+                      { backgroundColor: getLevelBg(sector.status) },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.homeHeatmapLevel,
+                        { color: getLevelColor(sector.status) },
+                      ]}
+                    >
+                      {getLevelLabel(sector.status)}
+                    </Text>
+
+                    <Text style={styles.homeHeatmapCount}>{sector.count}명</Text>
+
+                    <Text style={styles.homeHeatmapName} numberOfLines={2}>
+                      {sector.title}
+                    </Text>
+
+                    <View style={styles.homeStaffBadge}>
+                      <Ionicons name="people-outline" size={14} color={THEME.primary} />
+                      <Text style={styles.homeStaffBadgeText}>
+                        {sector.people.length}명
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: THEME.safe }]} />
+                  <Text style={styles.legendText}>여유</Text>
                 </View>
 
-                <View>
-                  <Text style={styles.personName}>{person.name}</Text>
-                  <Text style={styles.personRole}>{person.role}</Text>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: THEME.warning }]} />
+                  <Text style={styles.legendText}>주의</Text>
+                </View>
+
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: THEME.danger }]} />
+                  <Text style={styles.legendText}>위험</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        ))}
+            </View>
+          ) : (
+            <View style={styles.mapHeatmapCard}>
+              <View style={styles.mapBox}>
+                <WebView
+                  source={{ uri: MAP_URL }}
+                  style={styles.map}
+                  javaScriptEnabled
+                  domStorageEnabled
+                  geolocationEnabled
+                  originWhitelist={['*']}
+                  mixedContentMode="always"
+                />
 
-        <View style={{ height: 80 }} />
-      </View>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.mapChipScroll}
+              >
+                {sectors.map((sector) => (
+                  <View
+                    key={sector.id}
+                    style={[
+                      styles.mapChip,
+                      { borderColor: getLevelColor(sector.status) },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.mapChipDot,
+                        { backgroundColor: getLevelColor(sector.status) },
+                      ]}
+                    />
+                    <Text style={styles.mapChipTitle} numberOfLines={1}>
+                      {sector.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.mapChipLevel,
+                        { color: getLevelColor(sector.status) },
+                      ]}
+                    >
+                      {getLevelLabel(sector.status)} · {sector.count}명
+                    </Text>
+                    <Text style={styles.mapChipStaff}>
+                      직원 {sector.people.length}명
+                    </Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>권장 인력 재배치</Text>
+            <View style={styles.urgentBadge}>
+              <Text style={styles.urgentBadgeText}>긴급</Text>
+            </View>
+          </View>
+
+          <View style={styles.relocationCard}>
+            <View style={styles.relocationTop}>
+              <View style={styles.relocationIcon}>
+                <Ionicons name="warning-outline" size={34} color="#FFFFFF" />
+              </View>
+
+              <View style={styles.relocationTextBlock}>
+                <Text style={styles.relocationTitle}>인력 재배치 필요</Text>
+                <Text style={styles.relocationSubtitle}>백년관 버정길 위험 수준 감지</Text>
+              </View>
+            </View>
+
+            <View style={styles.relocationDivider} />
+
+            <View style={styles.routeRow}>
+              <View style={styles.fromBox}>
+                <Text style={styles.routeLabelMint}>출발 구역</Text>
+                <Text style={styles.routePlace}>공대 흡연부스 옆</Text>
+                <Text style={styles.routeStaff}>2명 배치</Text>
+              </View>
+
+              <View style={styles.arrowBlock}>
+                <Ionicons name="arrow-forward" size={38} color={THEME.primary} />
+                <Text style={styles.moveCount}>2명</Text>
+              </View>
+
+              <View style={styles.toBox}>
+                <Text style={styles.routeLabelDanger}>도착 구역</Text>
+                <Text style={styles.routePlace}>백년관 버정길</Text>
+                <Text style={styles.routeStaff}>1명 배치</Text>
+              </View>
+            </View>
+
+            <View style={styles.staffChangeBox}>
+              <View style={styles.staffChangeItem}>
+                <Text style={styles.staffChangeLabel}>현재 인력</Text>
+                <Text style={styles.currentStaff}>1명</Text>
+              </View>
+
+              <Ionicons name="arrow-forward" size={32} color="#9CA3AF" />
+
+              <View style={styles.staffChangeItem}>
+                <Text style={styles.staffChangeLabel}>재배치 후</Text>
+                <Text style={styles.afterStaff}>3명</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity activeOpacity={0.85} style={styles.applyButton}>
+              <Ionicons name="checkmark-circle-outline" size={21} color="#FFFFFF" />
+              <Text style={styles.applyButtonText}>재배치 적용하기</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.staffSectionHeader}>
+            <Text style={styles.staffSectionTitle}>전체 인력 관리</Text>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.addButton}
+              onPress={() => setAddModalVisible(true)}
+            >
+              <Ionicons name="add" size={30} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {sectors.map((section) => (
+            <View key={section.id} style={styles.staffCard}>
+              <View style={styles.staffCardHeader}>
+                <View style={styles.staffTitleRow}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      section.status === 'danger'
+                        ? styles.dangerDot
+                        : section.status === 'warning'
+                          ? styles.warningDot
+                          : styles.safeDot,
+                    ]}
+                  />
+                  <Text style={styles.staffLocation}>{section.title}</Text>
+                  <Text style={styles.staffCount}>({section.people.length}명)</Text>
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  style={styles.editButton}
+                  onPress={() => setSelectedSectorId(section.id)}
+                >
+                  <Ionicons name="pencil-outline" size={24} color="#9AA3B2" />
+                </TouchableOpacity>
+              </View>
+
+              {section.people.map((person, index) => (
+                <View key={`${person.name}-${index}`} style={styles.personBox}>
+                  <View style={styles.personIconBox}>
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={34}
+                      color={THEME.primary}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.personName}>{person.name}</Text>
+                    <Text style={styles.personRole}>{person.role}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
 
       <Modal
         visible={addModalVisible}
@@ -576,18 +657,23 @@ export default function SectorMonitoring() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+
   container: {
     flex: 1,
     backgroundColor: Colors.white,
   },
 
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 130,
   },
 
   header: {
@@ -616,6 +702,38 @@ const styles = StyleSheet.create({
     paddingTop: 22,
   },
 
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F4F6F8',
+    borderRadius: 18,
+    padding: 5,
+    marginBottom: 22,
+  },
+
+  modeButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+
+  modeButtonActive: {
+    backgroundColor: THEME.primary,
+  },
+
+  modeButtonText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#8B95A1',
+  },
+
+  modeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -631,11 +749,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  heatmapCard: {
+  homeHeatmapCard: {
     backgroundColor: Colors.white,
-    borderRadius: 26,
-    padding: 16,
-    marginBottom: 18,
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 28,
     shadowColor: '#000',
     shadowOpacity: 0.045,
     shadowRadius: 14,
@@ -643,66 +761,163 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  heatmapGrid: {
+  homeHeatmapGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
   },
 
-  heatmapItem: {
+  homeHeatmapItem: {
     width: '31%',
-    minHeight: 146,
-    borderRadius: 14,
+    minHeight: 148,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 12,
+    marginBottom: 14,
   },
 
-  heatmapName: {
-    fontSize: 13.5,
+  homeHeatmapLevel: {
+    fontSize: 21,
     fontWeight: '900',
     marginBottom: 8,
-    textAlign: 'center',
   },
 
-  heatmapCount: {
-    fontSize: 18,
-    color: THEME.dark,
+  homeHeatmapCount: {
+    fontSize: 23,
     fontWeight: '900',
+    color: THEME.dark,
+    marginBottom: 8,
+  },
+
+  homeHeatmapName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 16,
     marginBottom: 10,
   },
 
-  peopleRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 30,
-    marginBottom: 5,
-  },
-
-  staffBadge: {
+  homeStaffBadge: {
     backgroundColor: '#FFFFFF',
     borderRadius: 999,
     paddingHorizontal: 9,
-    paddingVertical: 3,
+    paddingVertical: 4,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
 
-  staffBadgeText: {
+  homeStaffBadgeText: {
     fontSize: 12,
     fontWeight: '900',
     color: THEME.primary,
+  },
+
+  mapHeatmapCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 26,
+    padding: 14,
+    marginBottom: 28,
+    shadowColor: '#000',
+    shadowOpacity: 0.045,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 2,
+  },
+
+  mapBox: {
+    height: 360,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    marginBottom: 14,
+  },
+
+  map: {
+    flex: 1,
+  },
+
+  mapOverlayHeader: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    right: 14,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+  },
+
+  mapOverlayTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: THEME.dark,
+  },
+
+  liveBadge: {
+    backgroundColor: THEME.danger,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+
+  liveBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+
+  mapChipScroll: {
+    paddingVertical: 4,
+    gap: 10,
+  },
+
+  mapChip: {
+    width: 150,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    marginRight: 10,
+  },
+
+  mapChipDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 8,
+  },
+
+  mapChipTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: THEME.dark,
+    marginBottom: 5,
+  },
+
+  mapChipLevel: {
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+
+  mapChipStaff: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#8B95A1',
   },
 
   legendRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 24,
-    marginBottom: 38,
+    marginTop: 8,
   },
 
   legendItem: {
@@ -753,9 +968,9 @@ const styles = StyleSheet.create({
   },
 
   relocationIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     backgroundColor: '#D6453D',
     alignItems: 'center',
     justifyContent: 'center',
@@ -959,15 +1174,15 @@ const styles = StyleSheet.create({
   },
 
   dangerDot: {
-    backgroundColor: '#D1433F',
+    backgroundColor: THEME.danger,
   },
 
   warningDot: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: THEME.warning,
   },
 
   safeDot: {
-    backgroundColor: '#4FA45B',
+    backgroundColor: THEME.safe,
   },
 
   staffLocation: {
@@ -1147,11 +1362,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 5,
   },
 
   registerButtonText: {
@@ -1320,11 +1530,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 18,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   },
 
   searchInput: {
@@ -1345,11 +1550,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   },
 
   checkBox: {
@@ -1433,11 +1633,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: THEME.primary,
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
   },
 
   completeButtonText: {

@@ -5,22 +5,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ImageBackground,
   Modal,
   Pressable,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 
 const TEAL = '#55CCC4';
 const DARK = '#111827';
 const PLACE_COUNT = 10;
+const MAP_URL = 'https://generous-maternity-smugness.ngrok-free.dev/map.html';
 
 function Progress({ step }: { step: number }) {
   return (
     <View style={styles.progressRow}>
-      {[1, 2, 3, 4].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <View
           key={i}
           style={[
@@ -64,39 +65,19 @@ function NumberTabs({
   );
 }
 
-function MapImage({ count = 0 }: { count?: number }) {
-  const markerPositions = [
-    { left: '15%', top: '18%' },
-    { left: '42%', top: '10%' },
-    { left: '78%', top: '18%' },
-    { left: '28%', top: '43%' },
-    { left: '55%', top: '36%' },
-    { left: '86%', top: '52%' },
-    { left: '13%', top: '65%' },
-    { left: '47%', top: '65%' },
-    { left: '76%', top: '76%' },
-    { left: '30%', top: '86%' },
-  ];
-
+function MapViewBox() {
   return (
-    <ImageBackground
-      source={require('../../../assets/campus-map.png')}
-      style={styles.map}
-      imageStyle={styles.mapImage}
-      resizeMode="cover"
-    >
-      {Array.from({ length: count }).map((_, index) => (
-        <View
-          key={index}
-          style={[
-            styles.marker,
-            markerPositions[index % markerPositions.length] as any,
-          ]}
-        >
-          <Text style={styles.markerText}>{index + 1}</Text>
-        </View>
-      ))}
-    </ImageBackground>
+    <View style={styles.mapBox}>
+      <WebView
+        source={{ uri: MAP_URL }}
+        style={styles.map}
+        javaScriptEnabled
+        domStorageEnabled
+        geolocationEnabled
+        originWhitelist={['*']}
+        mixedContentMode="always"
+      />
+    </View>
   );
 }
 
@@ -106,11 +87,11 @@ export default function OnboardingFlow({ navigation }: any) {
   const [showSkipModal, setShowSkipModal] = useState(false);
 
   const goNext = () => {
-    if (step < 4) {
+    if (step < 5) {
       setStep(step + 1);
       setSelectedNumber(1);
     } else {
-      setStep(5);
+      setStep(6);
     }
   };
 
@@ -121,7 +102,7 @@ export default function OnboardingFlow({ navigation }: any) {
     }
   };
 
-  if (step === 5) {
+  if (step === 6) {
     return (
       <View style={styles.completeContainer}>
         <Text style={styles.completeTitle}>
@@ -155,6 +136,7 @@ export default function OnboardingFlow({ navigation }: any) {
         {step === 2 && 'STEP 2. 행사장의 모든 CCTV 위치를 등록해주세요.'}
         {step === 3 && 'STEP 3. 각 CCTV 별 장소 이름을 등록해주세요.'}
         {step === 4 && 'STEP 4. 각 장소의 각도를 입력해주세요.'}
+        {step === 5 && 'STEP 5. 각 길의 면적을 입력해주세요.'}
       </Text>
 
       {step === 1 && (
@@ -168,7 +150,7 @@ export default function OnboardingFlow({ navigation }: any) {
             <Ionicons name="search-outline" size={28} color="#8B95A1" />
           </View>
 
-          <MapImage />
+          <MapViewBox />
 
           <View style={styles.bottomBar}>
             <TouchableOpacity style={styles.fullButton} onPress={goNext}>
@@ -189,7 +171,7 @@ export default function OnboardingFlow({ navigation }: any) {
             <Ionicons name="search-outline" size={28} color="#8B95A1" />
           </View>
 
-          <MapImage count={PLACE_COUNT} />
+          <MapViewBox />
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
@@ -217,7 +199,7 @@ export default function OnboardingFlow({ navigation }: any) {
             onChangeText={() => {}}
           />
 
-          <MapImage count={PLACE_COUNT} />
+          <MapViewBox />
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
@@ -245,7 +227,7 @@ export default function OnboardingFlow({ navigation }: any) {
             placeholderTextColor="#8B95A1"
           />
 
-          <MapImage count={PLACE_COUNT} />
+          <MapViewBox />
 
           <TouchableOpacity onPress={() => setShowSkipModal(true)}>
             <Text style={styles.skipText}>건너뛰기</Text>
@@ -256,35 +238,74 @@ export default function OnboardingFlow({ navigation }: any) {
               <Text style={styles.grayBtnText}>이전</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfButton} onPress={() => setStep(5)}>
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
               <Text style={styles.primaryBtnText}>확인</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
 
-      <Modal visible={showSkipModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay}>
-          <View style={styles.warningModal}>
-            <Text style={styles.warningTitle}>주의</Text>
+      {step === 5 && (
+        <>
+          <NumberTabs
+            count={PLACE_COUNT}
+            selected={selectedNumber}
+            onSelect={setSelectedNumber}
+          />
 
-            <Text style={styles.warningText}>
-              각도를 입력하지 않으면 추후{'\n'}
-              위험도 계산에 지장이 생겨요!{'\n'}
-              나중에라도 꼭 입력해주세요.
-            </Text>
+          <TextInput
+            style={styles.largeInput}
+            placeholder="면적을 입력하세요 (예: 120㎡)"
+            placeholderTextColor="#8B95A1"
+            keyboardType="numeric"
+          />
 
-            <TouchableOpacity
-              style={styles.warningButton}
-              onPress={() => {
-                setShowSkipModal(false);
-                setStep(5);
-              }}
-            >
-              <Text style={styles.primaryBtnText}>다음</Text>
+          <MapViewBox />
+
+          <TouchableOpacity onPress={() => setShowSkipModal(true)}>
+            <Text style={styles.skipText}>건너뛰기</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+              <Text style={styles.grayBtnText}>이전</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
             </TouchableOpacity>
           </View>
-        </Pressable>
+        </>
+      )}
+
+      <Modal transparent visible={showSkipModal} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>입력을 건너뛸까요?</Text>
+            <Text style={styles.modalText}>
+              해당 정보는 나중에 관리자 설정에서 다시 입력할 수 있습니다.
+            </Text>
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={styles.modalCancel}
+                onPress={() => setShowSkipModal(false)}
+              >
+                <Text style={styles.modalCancelText}>취소</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.modalConfirm}
+                onPress={() => {
+                  setShowSkipModal(false);
+                  goNext();
+                }}
+              >
+                <Text style={styles.modalConfirmText}>건너뛰기</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -294,224 +315,269 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingTop: 58,
+    paddingHorizontal: 24,
+    paddingTop: 64,
   },
+
   progressRow: {
     flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 36,
+    gap: 8,
     marginBottom: 34,
   },
+
   progressBar: {
     flex: 1,
-    height: 8,
-    borderRadius: 5,
+    height: 9,
+    borderRadius: 999,
   },
+
   title: {
-    fontSize: 24,
-    lineHeight: 36,
+    fontSize: 25,
     fontWeight: '900',
     color: DARK,
-    paddingHorizontal: 36,
-    marginBottom: 26,
+    lineHeight: 34,
+    letterSpacing: -0.8,
+    marginBottom: 24,
   },
+
   searchBox: {
-    marginHorizontal: 36,
-    height: 58,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
+    height: 62,
+    borderRadius: 18,
+    backgroundColor: '#F6F7F9',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    marginBottom: 36,
+    marginBottom: 18,
   },
+
   searchInput: {
     flex: 1,
     fontSize: 17,
+    fontWeight: '700',
     color: DARK,
-    fontWeight: '600',
   },
+
+  mapBox: {
+    flex: 1,
+    minHeight: 360,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 22,
+  },
+
   map: {
     flex: 1,
-    backgroundColor: '#DDEAF7',
-    overflow: 'hidden',
   },
-  mapImage: {
-    width: '100%',
-    height: '100%',
-  },
-  marker: {
-    position: 'absolute',
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: TEAL,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerText: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: DARK,
-  },
-  bottomBar: {
-    paddingHorizontal: 36,
-    paddingVertical: 28,
-    backgroundColor: '#FFFFFF',
-  },
-  fullButton: {
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: TEAL,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 18,
-    paddingHorizontal: 36,
-    paddingVertical: 28,
-    backgroundColor: '#FFFFFF',
-  },
-  halfButton: {
-    flex: 1,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: TEAL,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grayButton: {
-    flex: 1,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grayBtnText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: DARK,
-  },
-  primaryBtnText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
-  },
+
   numberWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
-    paddingHorizontal: 36,
-    marginBottom: 22,
+    gap: 10,
+    marginBottom: 18,
   },
+
   numberBtn: {
-    width: '17%',
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
+    width: '18%',
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#F4F6F8',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
+
   numberBtnActive: {
     backgroundColor: TEAL,
+    borderColor: TEAL,
   },
+
   numberText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
-    color: DARK,
+    color: '#8B95A1',
   },
+
   numberTextActive: {
     color: '#FFFFFF',
   },
+
   largeInput: {
-    marginHorizontal: 36,
     height: 62,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderRadius: 18,
+    backgroundColor: '#F6F7F9',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     paddingHorizontal: 18,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: DARK,
-    marginBottom: 28,
+    marginBottom: 18,
   },
+
   skipText: {
     textAlign: 'center',
     color: '#8B95A1',
     fontSize: 16,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-    marginTop: 20,
+    fontWeight: '800',
+    marginBottom: 16,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.48)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 50,
+
+  bottomBar: {
+    paddingBottom: 28,
   },
-  warningModal: {
-    width: '100%',
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    padding: 30,
-    alignItems: 'center',
+
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingBottom: 28,
   },
-  warningTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: DARK,
-    marginBottom: 28,
-  },
-  warningText: {
-    textAlign: 'center',
-    fontSize: 17,
-    lineHeight: 32,
-    color: DARK,
-    marginBottom: 30,
-  },
-  warningButton: {
-    width: '100%',
-    height: 58,
-    borderRadius: 10,
+
+  fullButton: {
+    height: 62,
+    borderRadius: 18,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  halfButton: {
+    flex: 1,
+    height: 62,
+    borderRadius: 18,
+    backgroundColor: TEAL,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  grayButton: {
+    flex: 1,
+    height: 62,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+
+  grayBtnText: {
+    color: DARK,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+
   completeContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 48,
+    paddingHorizontal: 28,
   },
+
   completeTitle: {
-    textAlign: 'center',
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: '900',
     color: DARK,
-    lineHeight: 42,
-    marginBottom: 40,
+    textAlign: 'center',
+    lineHeight: 44,
+    letterSpacing: -1,
+    marginBottom: 24,
   },
+
   completeAccent: {
     color: TEAL,
   },
+
   completeSub: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#8B95A1',
     textAlign: 'center',
-    fontSize: 21,
-    fontWeight: '900',
-    color: DARK,
-    lineHeight: 34,
-    marginBottom: 74,
+    lineHeight: 29,
+    marginBottom: 46,
   },
+
   completeButton: {
+    width: '100%',
     height: 64,
-    borderRadius: 10,
+    borderRadius: 18,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 24, 39, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+
+  modalBox: {
+    width: '100%',
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: DARK,
+    marginBottom: 10,
+  },
+
+  modalText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B95A1',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  modalCancel: {
+    flex: 1,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: DARK,
+  },
+
+  modalConfirm: {
+    flex: 1,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: TEAL,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalConfirmText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
   },
 });

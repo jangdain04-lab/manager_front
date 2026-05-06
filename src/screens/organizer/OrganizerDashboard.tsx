@@ -69,7 +69,8 @@ const initialNotices: Notice[] = [
   {
     id: 2,
     title: '백년관 버정길 안전 안내',
-    content: '백년관 버정길 인원이 증가하고 있어 현장 안내요원의 지시에 따라 이동해주세요.',
+    content:
+      '백년관 버정길 인원이 증가하고 있어 현장 안내요원의 지시에 따라 이동해주세요.',
     createdAt: '2026.04.08 13:45',
   },
 ];
@@ -99,6 +100,10 @@ export default function OrganizerDashboard({ navigation }: any) {
   const [noticeContent, setNoticeContent] = useState('');
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
 
+  const goToStaffTab = () => {
+    navigation.navigate('SectorMonitoringTab');
+  };
+
   const resetNoticeForm = () => {
     setNoticeTitle('');
     setNoticeContent('');
@@ -127,13 +132,11 @@ export default function OrganizerDashboard({ navigation }: any) {
       Alert.alert('수정 완료', '공지사항이 수정되었습니다.');
     } else {
       const now = new Date();
-      const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(
-        2,
-        '0',
-      )}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(
-        2,
-        '0',
-      )}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const createdAt = `${now.getFullYear()}.${String(
+        now.getMonth() + 1,
+      ).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(
+        now.getHours(),
+      ).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
       const newNotice: Notice = {
         id: Date.now(),
@@ -268,7 +271,11 @@ export default function OrganizerDashboard({ navigation }: any) {
               <View key={notice.id} style={styles.noticeCard}>
                 <View style={styles.noticeCardTop}>
                   <View style={styles.noticeCardIcon}>
-                    <Ionicons name="megaphone-outline" size={22} color={COLORS.primary} />
+                    <Ionicons
+                      name="megaphone-outline"
+                      size={22}
+                      color={COLORS.primary}
+                    />
                   </View>
 
                   <View style={styles.noticeCardTextBox}>
@@ -285,7 +292,11 @@ export default function OrganizerDashboard({ navigation }: any) {
                     style={styles.editNoticeButton}
                     onPress={() => handleEditNotice(notice)}
                   >
-                    <Ionicons name="pencil-outline" size={18} color={COLORS.primary} />
+                    <Ionicons
+                      name="pencil-outline"
+                      size={18}
+                      color={COLORS.primary}
+                    />
                     <Text style={styles.editNoticeButtonText}>수정</Text>
                   </TouchableOpacity>
 
@@ -294,7 +305,11 @@ export default function OrganizerDashboard({ navigation }: any) {
                     style={styles.deleteNoticeButton}
                     onPress={() => handleDeleteNotice(notice.id)}
                   >
-                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={COLORS.danger}
+                    />
                     <Text style={styles.deleteNoticeButtonText}>삭제</Text>
                   </TouchableOpacity>
                 </View>
@@ -321,9 +336,9 @@ export default function OrganizerDashboard({ navigation }: any) {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>실시간 히트맵</Text>
 
-        <TouchableOpacity
-          activeOpacity={0.75}
-          onPress={() => navigation.navigate('SectorMonitoring')}
+        <TouchableOpacity 
+          activeOpacity={0.75} 
+          onPress={() => navigation.getParent()?.navigate('SectorMonitoringTab')}
         >
           <Text style={styles.detailLink}>상세보기</Text>
         </TouchableOpacity>
