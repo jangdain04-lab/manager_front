@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
- StyleSheet,
+  StyleSheet,
   TouchableOpacity,
   TextInput,
   ImageBackground,
@@ -11,9 +11,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const TEAL = '#55CCC4';
 const DARK = '#111827';
+const PLACE_COUNT = 10;
 
 function Progress({ step }: { step: number }) {
   return (
@@ -100,11 +102,8 @@ function MapImage({ count = 0 }: { count?: number }) {
 
 export default function OnboardingFlow({ navigation }: any) {
   const [step, setStep] = useState(1);
-  const [placeCountText, setPlaceCountText] = useState('10');
   const [selectedNumber, setSelectedNumber] = useState(1);
   const [showSkipModal, setShowSkipModal] = useState(false);
-
-  const placeCount = Math.max(1, Math.min(10, Number(placeCountText) || 1));
 
   const goNext = () => {
     if (step < 4) {
@@ -160,17 +159,13 @@ export default function OnboardingFlow({ navigation }: any) {
 
       {step === 1 && (
         <>
-          <View style={styles.countInputWrap}>
-            <Text style={styles.countLabel}>등록할 장소 개수</Text>
-
+          <View style={styles.searchBox}>
             <TextInput
-              style={styles.countInput}
-              keyboardType="number-pad"
-              value={placeCountText}
-              onChangeText={setPlaceCountText}
-              placeholder="예: 10"
+              style={styles.searchInput}
+              placeholder="장소를 검색하세요"
               placeholderTextColor="#8B95A1"
             />
+            <Ionicons name="search-outline" size={28} color="#8B95A1" />
           </View>
 
           <MapImage />
@@ -185,7 +180,16 @@ export default function OnboardingFlow({ navigation }: any) {
 
       {step === 2 && (
         <>
-          <MapImage count={placeCount} />
+          <View style={styles.searchBox}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="장소를 검색하세요"
+              placeholderTextColor="#8B95A1"
+            />
+            <Ionicons name="search-outline" size={28} color="#8B95A1" />
+          </View>
+
+          <MapImage count={PLACE_COUNT} />
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
@@ -202,7 +206,7 @@ export default function OnboardingFlow({ navigation }: any) {
       {step === 3 && (
         <>
           <NumberTabs
-            count={placeCount}
+            count={PLACE_COUNT}
             selected={selectedNumber}
             onSelect={setSelectedNumber}
           />
@@ -213,7 +217,7 @@ export default function OnboardingFlow({ navigation }: any) {
             onChangeText={() => {}}
           />
 
-          <MapImage count={placeCount} />
+          <MapImage count={PLACE_COUNT} />
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
@@ -230,7 +234,7 @@ export default function OnboardingFlow({ navigation }: any) {
       {step === 4 && (
         <>
           <NumberTabs
-            count={placeCount}
+            count={PLACE_COUNT}
             selected={selectedNumber}
             onSelect={setSelectedNumber}
           />
@@ -241,7 +245,7 @@ export default function OnboardingFlow({ navigation }: any) {
             placeholderTextColor="#8B95A1"
           />
 
-          <MapImage count={placeCount} />
+          <MapImage count={PLACE_COUNT} />
 
           <TouchableOpacity onPress={() => setShowSkipModal(true)}>
             <Text style={styles.skipText}>건너뛰기</Text>
@@ -292,20 +296,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 58,
   },
-
   progressRow: {
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 36,
     marginBottom: 34,
   },
-
   progressBar: {
     flex: 1,
     height: 8,
     borderRadius: 5,
   },
-
   title: {
     fontSize: 24,
     lineHeight: 36,
@@ -314,41 +315,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
     marginBottom: 26,
   },
-
-  countInputWrap: {
+  searchBox: {
     marginHorizontal: 36,
-    marginBottom: 20,
-  },
-
-  countLabel: {
-    fontSize: 14,
-    color: '#8B95A1',
-    fontWeight: '800',
-    marginBottom: 8,
-  },
-
-  countInput: {
-    height: 52,
+    height: 58,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: '#D1D5DB',
-    paddingHorizontal: 16,
-    fontSize: 18,
-    fontWeight: '800',
-    color: DARK,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    marginBottom: 36,
   },
-
+  searchInput: {
+    flex: 1,
+    fontSize: 17,
+    color: DARK,
+    fontWeight: '600',
+  },
   map: {
     flex: 1,
     backgroundColor: '#DDEAF7',
     overflow: 'hidden',
   },
-
   mapImage: {
     width: '100%',
     height: '100%',
   },
-
   marker: {
     position: 'absolute',
     width: 46,
@@ -358,19 +350,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   markerText: {
     fontSize: 17,
     fontWeight: '900',
     color: DARK,
   },
-
   bottomBar: {
     paddingHorizontal: 36,
     paddingVertical: 28,
     backgroundColor: '#FFFFFF',
   },
-
   fullButton: {
     height: 64,
     borderRadius: 10,
@@ -378,7 +367,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   buttonRow: {
     flexDirection: 'row',
     gap: 18,
@@ -386,7 +374,6 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     backgroundColor: '#FFFFFF',
   },
-
   halfButton: {
     flex: 1,
     height: 64,
@@ -395,7 +382,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   grayButton: {
     flex: 1,
     height: 64,
@@ -404,51 +390,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   grayBtnText: {
     fontSize: 18,
     fontWeight: '900',
     color: DARK,
   },
-
   primaryBtnText: {
     fontSize: 18,
     fontWeight: '900',
     color: '#FFFFFF',
   },
-
   numberWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    columnGap: 10,
+    justifyContent: 'space-between',
     rowGap: 12,
     paddingHorizontal: 36,
     marginBottom: 22,
   },
-
   numberBtn: {
-    width: '18%',
+    width: '17%',
     height: 54,
     borderRadius: 12,
     backgroundColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   numberBtnActive: {
     backgroundColor: TEAL,
   },
-
   numberText: {
     fontSize: 18,
     fontWeight: '900',
     color: DARK,
   },
-
   numberTextActive: {
     color: '#FFFFFF',
   },
-
   largeInput: {
     marginHorizontal: 36,
     height: 62,
@@ -461,7 +439,6 @@ const styles = StyleSheet.create({
     color: DARK,
     marginBottom: 28,
   },
-
   skipText: {
     textAlign: 'center',
     color: '#8B95A1',
@@ -470,7 +447,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     marginTop: 20,
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.48)',
@@ -478,7 +454,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 50,
   },
-
   warningModal: {
     width: '100%',
     borderRadius: 16,
@@ -486,14 +461,12 @@ const styles = StyleSheet.create({
     padding: 30,
     alignItems: 'center',
   },
-
   warningTitle: {
     fontSize: 26,
     fontWeight: '900',
     color: DARK,
     marginBottom: 28,
   },
-
   warningText: {
     textAlign: 'center',
     fontSize: 17,
@@ -501,7 +474,6 @@ const styles = StyleSheet.create({
     color: DARK,
     marginBottom: 30,
   },
-
   warningButton: {
     width: '100%',
     height: 58,
@@ -510,14 +482,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   completeContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     paddingHorizontal: 48,
   },
-
   completeTitle: {
     textAlign: 'center',
     fontSize: 26,
@@ -526,11 +496,9 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     marginBottom: 40,
   },
-
   completeAccent: {
     color: TEAL,
   },
-
   completeSub: {
     textAlign: 'center',
     fontSize: 21,
@@ -539,7 +507,6 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     marginBottom: 74,
   },
-
   completeButton: {
     height: 64,
     borderRadius: 10,
