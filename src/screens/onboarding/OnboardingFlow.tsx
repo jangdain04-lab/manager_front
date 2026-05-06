@@ -9,11 +9,9 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
-import { scale, verticalScale, moderateScale } from '../../utils/scale';
 
 const TEAL = '#55CCC4';
 const DARK = '#111827';
@@ -23,7 +21,7 @@ const MAP_URL = 'https://generous-maternity-smugness.ngrok-free.dev/map.html';
 function Progress({ step }: { step: number }) {
   return (
     <View style={styles.progressRow}>
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4, 5].map(i => (
         <View
           key={i}
           style={[
@@ -131,168 +129,154 @@ export default function OnboardingFlow({ navigation }: any) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Progress step={step} />
+      <Progress step={step} />
 
-        <Text style={styles.title}>
-          {step === 1 && 'STEP 1. 행사의 장소 범위를 등록해주세요.'}
-          {step === 2 && 'STEP 2. 행사장의 모든 CCTV 위치를 등록해주세요.'}
-          {step === 3 && 'STEP 3. 각 CCTV 별 장소 이름을 등록해주세요.'}
-          {step === 4 && 'STEP 4. 각 장소의 각도를 입력해주세요.'}
-          {step === 5 && 'STEP 5. 각 길의 면적을 입력해주세요.'}
-        </Text>
+      <Text style={styles.title}>
+        {step === 1 && 'STEP 1. 행사의 장소 범위를 등록해주세요.'}
+        {step === 2 && 'STEP 2. 행사장의 모든 CCTV 위치를 등록해주세요.'}
+        {step === 3 && 'STEP 3. 각 CCTV 별 장소 이름을 등록해주세요.'}
+        {step === 4 && 'STEP 4. 각 장소의 각도를 입력해주세요.'}
+        {step === 5 && 'STEP 5. 각 길의 면적을 입력해주세요.'}
+      </Text>
 
-        {step === 1 && (
-          <>
-            <View style={styles.searchBox}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="장소를 검색하세요"
-                placeholderTextColor="#8B95A1"
-              />
-              <Ionicons
-                name="search-outline"
-                size={moderateScale(26)}
-                color="#8B95A1"
-              />
-            </View>
-
-            <MapViewBox />
-
-            <View style={styles.bottomBar}>
-              <TouchableOpacity style={styles.fullButton} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <View style={styles.searchBox}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="장소를 검색하세요"
-                placeholderTextColor="#8B95A1"
-              />
-              <Ionicons
-                name="search-outline"
-                size={moderateScale(26)}
-                color="#8B95A1"
-              />
-            </View>
-
-            <MapViewBox />
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-                <Text style={styles.grayBtnText}>이전</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <NumberTabs
-              count={PLACE_COUNT}
-              selected={selectedNumber}
-              onSelect={setSelectedNumber}
-            />
-
+      {step === 1 && (
+        <>
+          <View style={styles.searchBox}>
             <TextInput
-              style={styles.largeInput}
-              value={`${selectedNumber}번 장소`}
-              onChangeText={() => {}}
-            />
-
-            <MapViewBox />
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-                <Text style={styles.grayBtnText}>이전</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {step === 4 && (
-          <>
-            <NumberTabs
-              count={PLACE_COUNT}
-              selected={selectedNumber}
-              onSelect={setSelectedNumber}
-            />
-
-            <TextInput
-              style={styles.largeInput}
-              placeholder="각도를 입력하세요 (예: 90°)"
+              style={styles.searchInput}
+              placeholder="장소를 검색하세요"
               placeholderTextColor="#8B95A1"
             />
+            <Ionicons name="search-outline" size={28} color="#8B95A1" />
+          </View>
 
-            <MapViewBox />
+          <MapViewBox />
 
-            <TouchableOpacity onPress={() => setShowSkipModal(true)}>
-              <Text style={styles.skipText}>건너뛰기</Text>
+          <View style={styles.bottomBar}>
+            <TouchableOpacity style={styles.fullButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
             </TouchableOpacity>
+          </View>
+        </>
+      )}
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-                <Text style={styles.grayBtnText}>이전</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {step === 5 && (
-          <>
-            <NumberTabs
-              count={PLACE_COUNT}
-              selected={selectedNumber}
-              onSelect={setSelectedNumber}
-            />
-
+      {step === 2 && (
+        <>
+          <View style={styles.searchBox}>
             <TextInput
-              style={styles.largeInput}
-              placeholder="면적을 입력하세요 (예: 120㎡)"
+              style={styles.searchInput}
+              placeholder="장소를 검색하세요"
               placeholderTextColor="#8B95A1"
-              keyboardType="numeric"
             />
+            <Ionicons name="search-outline" size={28} color="#8B95A1" />
+          </View>
 
-            <MapViewBox />
+          <MapViewBox />
 
-            <TouchableOpacity onPress={() => setShowSkipModal(true)}>
-              <Text style={styles.skipText}>건너뛰기</Text>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+              <Text style={styles.grayBtnText}>이전</Text>
             </TouchableOpacity>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-                <Text style={styles.grayBtnText}>이전</Text>
-              </TouchableOpacity>
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
-              <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-                <Text style={styles.primaryBtnText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </ScrollView>
+      {step === 3 && (
+        <>
+          <NumberTabs
+            count={PLACE_COUNT}
+            selected={selectedNumber}
+            onSelect={setSelectedNumber}
+          />
+
+          <TextInput
+            style={styles.largeInput}
+            value={`${selectedNumber}번 장소`}
+            onChangeText={() => {}}
+          />
+
+          <MapViewBox />
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+              <Text style={styles.grayBtnText}>이전</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <NumberTabs
+            count={PLACE_COUNT}
+            selected={selectedNumber}
+            onSelect={setSelectedNumber}
+          />
+
+          <TextInput
+            style={styles.largeInput}
+            placeholder="각도를 입력하세요 (예: 90°)"
+            placeholderTextColor="#8B95A1"
+          />
+
+          <MapViewBox />
+
+          <TouchableOpacity onPress={() => setShowSkipModal(true)}>
+            <Text style={styles.skipText}>건너뛰기</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+              <Text style={styles.grayBtnText}>이전</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {step === 5 && (
+        <>
+          <NumberTabs
+            count={PLACE_COUNT}
+            selected={selectedNumber}
+            onSelect={setSelectedNumber}
+          />
+
+          <TextInput
+            style={styles.largeInput}
+            placeholder="면적을 입력하세요 (예: 120㎡)"
+            placeholderTextColor="#8B95A1"
+            keyboardType="numeric"
+          />
+
+          <MapViewBox />
+
+          <TouchableOpacity onPress={() => setShowSkipModal(true)}>
+            <Text style={styles.skipText}>건너뛰기</Text>
+          </TouchableOpacity>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+              <Text style={styles.grayBtnText}>이전</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+              <Text style={styles.primaryBtnText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       <Modal transparent visible={showSkipModal} animationType="fade">
         <View style={styles.modalOverlay}>
@@ -331,64 +315,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: scale(24),
-    paddingTop: verticalScale(54),
-    paddingBottom: verticalScale(24),
+    paddingHorizontal: 24,
+    paddingTop: 64,
   },
 
   progressRow: {
     flexDirection: 'row',
-    gap: scale(8),
-    marginBottom: verticalScale(26),
+    gap: 8,
+    marginBottom: 34,
   },
 
   progressBar: {
     flex: 1,
-    height: verticalScale(8),
-    borderRadius: scale(999),
+    height: 9,
+    borderRadius: 999,
   },
 
   title: {
-    fontSize: moderateScale(24),
+    fontSize: 25,
     fontWeight: '900',
     color: DARK,
-    lineHeight: moderateScale(32),
+    lineHeight: 34,
     letterSpacing: -0.8,
-    marginBottom: verticalScale(18),
+    marginBottom: 24,
   },
 
   searchBox: {
-    height: verticalScale(58),
-    borderRadius: scale(18),
+    height: 62,
+    borderRadius: 18,
     backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingHorizontal: scale(18),
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(14),
+    marginBottom: 18,
   },
 
   searchInput: {
     flex: 1,
-    fontSize: moderateScale(16),
+    fontSize: 17,
     fontWeight: '700',
     color: DARK,
   },
 
   mapBox: {
-    height: verticalScale(350),
-    minHeight: verticalScale(280),
-    borderRadius: scale(26),
+    flex: 1,
+    minHeight: 360,
+    borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    marginBottom: verticalScale(18),
+    marginBottom: 22,
   },
 
   map: {
@@ -398,14 +377,14 @@ const styles = StyleSheet.create({
   numberWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: scale(8),
-    marginBottom: verticalScale(14),
+    gap: 10,
+    marginBottom: 18,
   },
 
   numberBtn: {
     width: '18%',
-    height: verticalScale(44),
-    borderRadius: scale(15),
+    height: 48,
+    borderRadius: 16,
     backgroundColor: '#F4F6F8',
     alignItems: 'center',
     justifyContent: 'center',
@@ -419,7 +398,7 @@ const styles = StyleSheet.create({
   },
 
   numberText: {
-    fontSize: moderateScale(14),
+    fontSize: 15,
     fontWeight: '900',
     color: '#8B95A1',
   },
@@ -429,39 +408,39 @@ const styles = StyleSheet.create({
   },
 
   largeInput: {
-    height: verticalScale(58),
-    borderRadius: scale(18),
+    height: 62,
+    borderRadius: 18,
     backgroundColor: '#F6F7F9',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingHorizontal: scale(18),
-    fontSize: moderateScale(16),
+    paddingHorizontal: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: DARK,
-    marginBottom: verticalScale(14),
+    marginBottom: 18,
   },
 
   skipText: {
     textAlign: 'center',
     color: '#8B95A1',
-    fontSize: moderateScale(15),
+    fontSize: 16,
     fontWeight: '800',
-    marginBottom: verticalScale(14),
+    marginBottom: 16,
   },
 
   bottomBar: {
-    paddingBottom: verticalScale(8),
+    paddingBottom: 28,
   },
 
   buttonRow: {
     flexDirection: 'row',
-    gap: scale(12),
-    paddingBottom: verticalScale(8),
+    gap: 12,
+    paddingBottom: 28,
   },
 
   fullButton: {
-    height: verticalScale(58),
-    borderRadius: scale(18),
+    height: 62,
+    borderRadius: 18,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
@@ -469,8 +448,8 @@ const styles = StyleSheet.create({
 
   halfButton: {
     flex: 1,
-    height: verticalScale(58),
-    borderRadius: scale(18),
+    height: 62,
+    borderRadius: 18,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
@@ -478,8 +457,8 @@ const styles = StyleSheet.create({
 
   grayButton: {
     flex: 1,
-    height: verticalScale(58),
-    borderRadius: scale(18),
+    height: 62,
+    borderRadius: 18,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
@@ -487,13 +466,13 @@ const styles = StyleSheet.create({
 
   primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: moderateScale(17),
+    fontSize: 18,
     fontWeight: '900',
   },
 
   grayBtnText: {
     color: DARK,
-    fontSize: moderateScale(17),
+    fontSize: 18,
     fontWeight: '900',
   },
 
@@ -502,17 +481,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: scale(28),
+    paddingHorizontal: 28,
   },
 
   completeTitle: {
-    fontSize: moderateScale(31),
+    fontSize: 32,
     fontWeight: '900',
     color: DARK,
     textAlign: 'center',
-    lineHeight: moderateScale(42),
+    lineHeight: 44,
     letterSpacing: -1,
-    marginBottom: verticalScale(22),
+    marginBottom: 24,
   },
 
   completeAccent: {
@@ -520,18 +499,18 @@ const styles = StyleSheet.create({
   },
 
   completeSub: {
-    fontSize: moderateScale(18),
+    fontSize: 19,
     fontWeight: '700',
     color: '#8B95A1',
     textAlign: 'center',
-    lineHeight: moderateScale(28),
-    marginBottom: verticalScale(42),
+    lineHeight: 29,
+    marginBottom: 46,
   },
 
   completeButton: {
     width: '100%',
-    height: verticalScale(60),
-    borderRadius: scale(18),
+    height: 64,
+    borderRadius: 18,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
@@ -542,62 +521,62 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(17, 24, 39, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: scale(28),
+    paddingHorizontal: 28,
   },
 
   modalBox: {
     width: '100%',
-    borderRadius: scale(24),
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    padding: scale(24),
+    padding: 24,
   },
 
   modalTitle: {
-    fontSize: moderateScale(21),
+    fontSize: 22,
     fontWeight: '900',
     color: DARK,
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
   },
 
   modalText: {
-    fontSize: moderateScale(15),
+    fontSize: 16,
     fontWeight: '600',
     color: '#8B95A1',
-    lineHeight: moderateScale(23),
-    marginBottom: verticalScale(22),
+    lineHeight: 24,
+    marginBottom: 24,
   },
 
   modalButtonRow: {
     flexDirection: 'row',
-    gap: scale(12),
+    gap: 12,
   },
 
   modalCancel: {
     flex: 1,
-    height: verticalScale(52),
-    borderRadius: scale(16),
+    height: 54,
+    borderRadius: 16,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   modalCancelText: {
-    fontSize: moderateScale(15),
+    fontSize: 16,
     fontWeight: '900',
     color: DARK,
   },
 
   modalConfirm: {
     flex: 1,
-    height: verticalScale(52),
-    borderRadius: scale(16),
+    height: 54,
+    borderRadius: 16,
     backgroundColor: TEAL,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   modalConfirmText: {
-    fontSize: moderateScale(15),
+    fontSize: 16,
     fontWeight: '900',
     color: '#FFFFFF',
   },
