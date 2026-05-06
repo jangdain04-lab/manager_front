@@ -7,19 +7,20 @@ import {
   Modal,
   TextInput,
   Pressable,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }: any) {
   const [inviteOpen, setInviteOpen] = useState(false);
-  const goNext = () => navigation.replace('Onboarding');
+
+  const goNext = () => {
+    navigation.replace('Onboarding');
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoBox}>
-        <Ionicons name="shield-checkmark-outline" size={86} color="#15AFA4" />
-        <Ionicons name="add" size={28} color="#15AFA4" style={styles.plus} />
-      </View>
+      <Image source={require('../../../assets/logo.png')} style={styles.logo} />
 
       <Text style={styles.slogan}>
         모두의 <Text style={styles.accent}>안전한</Text> 길을 만들다.
@@ -55,7 +56,9 @@ export default function LoginScreen({ navigation }: any) {
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>초대코드 입력</Text>
-            <Text style={styles.modalDesc}>총 관리자에게 받은{'\n'}초대 코드를 입력해주세요</Text>
+            <Text style={styles.modalDesc}>
+              총 관리자에게 받은{'\n'}초대 코드를 입력해주세요
+            </Text>
 
             <TextInput
               style={styles.modalInput}
@@ -87,19 +90,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoBox: {
+  logo: {
     width: 138,
     height: 138,
-    borderRadius: 38,
-    backgroundColor: '#061728',
-    alignItems: 'center',
-    justifyContent: 'center',
+    resizeMode: 'contain',
     marginBottom: 38,
-  },
-  plus: {
-    position: 'absolute',
-    right: 28,
-    top: 38,
   },
   slogan: {
     fontSize: 26,

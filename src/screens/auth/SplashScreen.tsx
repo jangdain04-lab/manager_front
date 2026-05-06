@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Image } from 'react-native';
 
 export default function SplashScreen({ navigation }: any) {
   useEffect(() => {
@@ -9,14 +8,11 @@ export default function SplashScreen({ navigation }: any) {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoBox}>
-        <Ionicons name="shield-checkmark-outline" size={88} color="#15AFA4" />
-        <Ionicons name="add" size={30} color="#15AFA4" style={styles.plus} />
-      </View>
+      <Image source={require('../../../assets/logo.png')} style={styles.logo} />
 
       <Text style={styles.logoText}>
         SAFE<Text style={styles.logoAccent}>PATH</Text>
@@ -32,19 +28,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoBox: {
+  logo: {
     width: 154,
     height: 154,
-    borderRadius: 42,
-    backgroundColor: '#061728',
-    alignItems: 'center',
-    justifyContent: 'center',
+    resizeMode: 'contain',
     marginBottom: 54,
-  },
-  plus: {
-    position: 'absolute',
-    right: 32,
-    top: 42,
   },
   logoText: {
     fontSize: 36,
