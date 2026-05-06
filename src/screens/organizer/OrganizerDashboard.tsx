@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 
 const COLORS = {
   primary: '#55CCC4',
@@ -101,7 +102,14 @@ export default function OrganizerDashboard({ navigation }: any) {
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
 
   const goToStaffTab = () => {
-    navigation.navigate('SectorMonitoringTab');
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'MainTabs',
+        params: {
+          screen: 'SectorMonitoringTab',
+        },
+      }),
+    );
   };
 
   const resetNoticeForm = () => {
@@ -336,10 +344,7 @@ export default function OrganizerDashboard({ navigation }: any) {
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>실시간 히트맵</Text>
 
-        <TouchableOpacity 
-          activeOpacity={0.75} 
-          onPress={() => navigation.getParent()?.navigate('SectorMonitoringTab')}
-        >
+        <TouchableOpacity activeOpacity={0.75} onPress={goToStaffTab}>
           <Text style={styles.detailLink}>상세보기</Text>
         </TouchableOpacity>
       </View>
