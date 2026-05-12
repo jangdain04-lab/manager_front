@@ -9,9 +9,12 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TEAL = '#55CCC4';
 const DARK = '#111827';
@@ -65,9 +68,9 @@ function NumberTabs({
   );
 }
 
-function MapViewBox() {
+function MapViewBox({ height }: { height: number }) {
   return (
-    <View style={styles.mapBox}>
+    <View style={[styles.mapBox, { height }]}>
       <WebView
         source={{ uri: MAP_URL }}
         style={styles.map}
@@ -85,6 +88,8 @@ export default function OnboardingFlow({ navigation }: any) {
   const [step, setStep] = useState(1);
   const [selectedNumber, setSelectedNumber] = useState(1);
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const { height } = useWindowDimensions();
+  const mapHeight = Math.max(220, Math.min(360, height * 0.38));
 
   const goNext = () => {
     if (step < 5) {
@@ -104,219 +109,242 @@ export default function OnboardingFlow({ navigation }: any) {
 
   if (step === 6) {
     return (
-      <View style={styles.completeContainer}>
-        <Text style={styles.completeTitle}>
-          <Text style={styles.completeAccent}>초기 정보 입력</Text>이{'\n'}
-          모두 끝났습니다!
-        </Text>
-
-        <Text style={styles.completeSub}>
-          본격적으로 행사 관리를{'\n'}시작해볼까요?
-        </Text>
-
-        <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => navigation.replace('MainTabs')}
+      <SafeAreaView style={styles.completeSafeArea}>
+        <ScrollView
+          contentContainerStyle={styles.completeContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.primaryBtnText}>다음</Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={styles.completeTitle}>
+            <Text style={styles.completeAccent}>초기 정보 입력</Text>이{'\n'}
+            모두 끝났습니다!
+          </Text>
+
+          <Text style={styles.completeSub}>
+            본격적으로 행사 관리를{'\n'}시작해볼까요?
+          </Text>
+
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => navigation.replace('MainTabs')}
+          >
+            <Text style={styles.primaryBtnText}>다음</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Progress step={step} />
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Progress step={step} />
 
-      <Text style={styles.title}>
-        {step === 1 && 'STEP 1. 행사의 장소 범위를 등록해주세요.'}
-        {step === 2 && 'STEP 2. 행사장의 모든 CCTV 위치를 등록해주세요.'}
-        {step === 3 && 'STEP 3. 각 CCTV 별 장소 이름을 등록해주세요.'}
-        {step === 4 && 'STEP 4. 각 장소의 각도를 입력해주세요.'}
-        {step === 5 && 'STEP 5. 각 길의 면적을 입력해주세요.'}
-      </Text>
+          <Text style={styles.title}>
+            {step === 1 && 'STEP 1. 행사의 장소 범위를 등록해주세요.'}
+            {step === 2 && 'STEP 2. 행사장의 모든 CCTV 위치를 등록해주세요.'}
+            {step === 3 && 'STEP 3. 각 CCTV 별 장소 이름을 등록해주세요.'}
+            {step === 4 && 'STEP 4. 각 장소의 각도를 입력해주세요.'}
+            {step === 5 && 'STEP 5. 각 길의 면적을 입력해주세요.'}
+          </Text>
 
-      {step === 1 && (
-        <>
-          <View style={styles.searchBox}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="장소를 검색하세요"
-              placeholderTextColor="#8B95A1"
-            />
-            <Ionicons name="search-outline" size={28} color="#8B95A1" />
-          </View>
+          {step === 1 && (
+            <>
+              <View style={styles.searchBox}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="장소를 검색하세요"
+                  placeholderTextColor="#8B95A1"
+                />
+                <Ionicons name="search-outline" size={28} color="#8B95A1" />
+              </View>
 
-          <MapViewBox />
+              <MapViewBox height={mapHeight} />
 
-          <View style={styles.bottomBar}>
-            <TouchableOpacity style={styles.fullButton} onPress={goNext}>
-              <Text style={styles.primaryBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+              <View style={styles.bottomBar}>
+                <TouchableOpacity style={styles.fullButton} onPress={goNext}>
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-      {step === 2 && (
-        <>
-          <View style={styles.searchBox}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="장소를 검색하세요"
-              placeholderTextColor="#8B95A1"
-            />
-            <Ionicons name="search-outline" size={28} color="#8B95A1" />
-          </View>
+          {step === 2 && (
+            <>
+              <View style={styles.searchBox}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="장소를 검색하세요"
+                  placeholderTextColor="#8B95A1"
+                />
+                <Ionicons name="search-outline" size={28} color="#8B95A1" />
+              </View>
 
-          <MapViewBox />
+              <MapViewBox height={mapHeight} />
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-              <Text style={styles.grayBtnText}>이전</Text>
-            </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+                  <Text style={styles.grayBtnText}>이전</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-              <Text style={styles.primaryBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+                <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-      {step === 3 && (
-        <>
-          <NumberTabs
-            count={PLACE_COUNT}
-            selected={selectedNumber}
-            onSelect={setSelectedNumber}
-          />
+          {step === 3 && (
+            <>
+              <NumberTabs
+                count={PLACE_COUNT}
+                selected={selectedNumber}
+                onSelect={setSelectedNumber}
+              />
 
-          <TextInput
-            style={styles.largeInput}
-            value={`${selectedNumber}번 장소`}
-            onChangeText={() => {}}
-          />
+              <TextInput
+                style={styles.largeInput}
+                value={`${selectedNumber}번 장소`}
+                onChangeText={() => {}}
+              />
 
-          <MapViewBox />
+              <MapViewBox height={mapHeight} />
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-              <Text style={styles.grayBtnText}>이전</Text>
-            </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+                  <Text style={styles.grayBtnText}>이전</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-              <Text style={styles.primaryBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+                <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-      {step === 4 && (
-        <>
-          <NumberTabs
-            count={PLACE_COUNT}
-            selected={selectedNumber}
-            onSelect={setSelectedNumber}
-          />
+          {step === 4 && (
+            <>
+              <NumberTabs
+                count={PLACE_COUNT}
+                selected={selectedNumber}
+                onSelect={setSelectedNumber}
+              />
 
-          <TextInput
-            style={styles.largeInput}
-            placeholder="각도를 입력하세요 (예: 90°)"
-            placeholderTextColor="#8B95A1"
-          />
+              <TextInput
+                style={styles.largeInput}
+                placeholder="각도를 입력하세요 (예: 90°)"
+                placeholderTextColor="#8B95A1"
+              />
 
-          <MapViewBox />
+              <MapViewBox height={mapHeight} />
 
-          <TouchableOpacity onPress={() => setShowSkipModal(true)}>
-            <Text style={styles.skipText}>건너뛰기</Text>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowSkipModal(true)}>
+                <Text style={styles.skipText}>건너뛰기</Text>
+              </TouchableOpacity>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-              <Text style={styles.grayBtnText}>이전</Text>
-            </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+                  <Text style={styles.grayBtnText}>이전</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-              <Text style={styles.primaryBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+                <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-      {step === 5 && (
-        <>
-          <NumberTabs
-            count={PLACE_COUNT}
-            selected={selectedNumber}
-            onSelect={setSelectedNumber}
-          />
+          {step === 5 && (
+            <>
+              <NumberTabs
+                count={PLACE_COUNT}
+                selected={selectedNumber}
+                onSelect={setSelectedNumber}
+              />
 
-          <TextInput
-            style={styles.largeInput}
-            placeholder="면적을 입력하세요 (예: 120㎡)"
-            placeholderTextColor="#8B95A1"
-            keyboardType="numeric"
-          />
+              <TextInput
+                style={styles.largeInput}
+                placeholder="면적을 입력하세요 (예: 120㎡)"
+                placeholderTextColor="#8B95A1"
+                keyboardType="numeric"
+              />
 
-          <MapViewBox />
+              <MapViewBox height={mapHeight} />
 
-          <TouchableOpacity onPress={() => setShowSkipModal(true)}>
-            <Text style={styles.skipText}>건너뛰기</Text>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowSkipModal(true)}>
+                <Text style={styles.skipText}>건너뛰기</Text>
+              </TouchableOpacity>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
-              <Text style={styles.grayBtnText}>이전</Text>
-            </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.grayButton} onPress={goPrev}>
+                  <Text style={styles.grayBtnText}>이전</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.halfButton} onPress={goNext}>
-              <Text style={styles.primaryBtnText}>확인</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+                <TouchableOpacity style={styles.halfButton} onPress={goNext}>
+                  <Text style={styles.primaryBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
 
-      <Modal transparent visible={showSkipModal} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>입력을 건너뛸까요?</Text>
-            <Text style={styles.modalText}>
-              해당 정보는 나중에 관리자 설정에서 다시 입력할 수 있습니다.
-            </Text>
+          <Modal transparent visible={showSkipModal} animationType="fade">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalBox}>
+                <Text style={styles.modalTitle}>입력을 건너뛸까요?</Text>
+                <Text style={styles.modalText}>
+                  해당 정보는 나중에 관리자 설정에서 다시 입력할 수 있습니다.
+                </Text>
 
-            <View style={styles.modalButtonRow}>
-              <Pressable
-                style={styles.modalCancel}
-                onPress={() => setShowSkipModal(false)}
-              >
-                <Text style={styles.modalCancelText}>취소</Text>
-              </Pressable>
+                <View style={styles.modalButtonRow}>
+                  <Pressable
+                    style={styles.modalCancel}
+                    onPress={() => setShowSkipModal(false)}
+                  >
+                    <Text style={styles.modalCancelText}>취소</Text>
+                  </Pressable>
 
-              <Pressable
-                style={styles.modalConfirm}
-                onPress={() => {
-                  setShowSkipModal(false);
-                  goNext();
-                }}
-              >
-                <Text style={styles.modalConfirmText}>건너뛰기</Text>
-              </Pressable>
+                  <Pressable
+                    style={styles.modalConfirm}
+                    onPress={() => {
+                      setShowSkipModal(false);
+                      goNext();
+                    }}
+                  >
+                    <Text style={styles.modalConfirmText}>건너뛰기</Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
+          </Modal>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+
+  keyboardArea: {
+    flex: 1,
+  },
+
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
-    paddingTop: 64,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
 
   progressRow: {
@@ -360,8 +388,6 @@ const styles = StyleSheet.create({
   },
 
   mapBox: {
-    flex: 1,
-    minHeight: 360,
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
@@ -429,13 +455,13 @@ const styles = StyleSheet.create({
   },
 
   bottomBar: {
-    paddingBottom: 28,
+    paddingBottom: 12,
   },
 
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingBottom: 28,
+    paddingBottom: 12,
   },
 
   fullButton: {
@@ -476,12 +502,18 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 
-  completeContainer: {
+  completeSafeArea: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+
+  completeContainer: {
+    flexGrow: 1,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
+    paddingVertical: 24,
   },
 
   completeTitle: {

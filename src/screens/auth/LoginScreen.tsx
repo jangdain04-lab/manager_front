@@ -8,7 +8,9 @@ import {
   TextInput,
   Pressable,
   Image,
+  ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }: any) {
@@ -19,34 +21,39 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('../../../assets/logo.png')} style={styles.logo} />
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <Image source={require('../../../assets/logo.png')} style={styles.logo} />
 
-      <Text style={styles.slogan}>
-        모두의 <Text style={styles.accent}>안전한</Text> 길을 만들다.
-      </Text>
+        <Text style={styles.slogan}>
+          모두의 <Text style={styles.accent}>안전한</Text> 길을 만들다.
+        </Text>
 
-      <TouchableOpacity style={styles.emailBtn} onPress={goNext}>
-        <Text style={styles.emailBtnText}>이메일로 가입하기</Text>
-      </TouchableOpacity>
-
-      <View style={styles.socialRow}>
-        <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FEE500' }]} onPress={goNext}>
-          <Text style={styles.kakao}>●</Text>
+        <TouchableOpacity style={styles.emailBtn} onPress={goNext}>
+          <Text style={styles.emailBtnText}>이메일로 가입하기</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#03C75A' }]} onPress={goNext}>
-          <Text style={styles.naver}>N</Text>
-        </TouchableOpacity>
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#FEE500' }]} onPress={goNext}>
+            <Text style={styles.kakao}>●</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.socialBtn, styles.googleBtn]} onPress={goNext}>
-          <Text style={styles.google}>G</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={[styles.socialBtn, { backgroundColor: '#03C75A' }]} onPress={goNext}>
+            <Text style={styles.naver}>N</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => setInviteOpen(true)}>
-        <Text style={styles.inviteText}>초대코드를 받으셨나요?</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={[styles.socialBtn, styles.googleBtn]} onPress={goNext}>
+            <Text style={styles.google}>G</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity onPress={() => setInviteOpen(true)}>
+          <Text style={styles.inviteText}>초대코드를 받으셨나요?</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       <Modal visible={inviteOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setInviteOpen(false)}>
@@ -78,14 +85,19 @@ export default function LoginScreen({ navigation }: any) {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  container: {
+    flexGrow: 1,
     paddingHorizontal: 48,
+    paddingVertical: 24,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
