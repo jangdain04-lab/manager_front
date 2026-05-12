@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../../components/Colors';
+import { fetchEventSettings, saveEventSettings } from '../../services/api';
 
 const THEME = {
   primary: '#55CCC4',
@@ -66,6 +67,7 @@ export default function Settings() {
   const [placeSettingVisible, setPlaceSettingVisible] = useState(false);
   const [selectedStep, setSelectedStep] = useState(1);
   const [placeInfo, setPlaceInfo] = useState<PlaceInfo>(initialPlaceInfo);
+  const [placeInfoLoadError, setPlaceInfoLoadError] = useState('');
 
   const updateArrayValue = (
     key: 'cctvLocations' | 'placeNames' | 'roadAngles' | 'roadAreas',
@@ -83,9 +85,36 @@ export default function Settings() {
     });
   };
 
-  const savePlaceInfo = () => {
-    Alert.alert('저장 완료', '장소 정보 설정이 수정되었습니다.');
-    setPlaceSettingVisible(false);
+  const loadPlaceInfo = async () => {
+    try {
+      const settings = await fetchEventSettings();
+      setPlaceInfoLoadError('');
+      setPlaceInfo(settings);
+    } catch (error) {
+      console.warn('Failed to load event settings', error);
+      setPlaceInfoLoadError('백엔드 장소 정보를 불러오지 못했습니다.');
+    }
+  };
+
+  useEffect(() => {
+    loadPlaceInfo();
+  }, []);
+
+  useEffect(() => {
+    if (placeSettingVisible) {
+      loadPlaceInfo();
+    }
+  }, [placeSettingVisible]);
+
+  const savePlaceInfo = async () => {
+    try {
+      const saved = await saveEventSettings(placeInfo);
+      setPlaceInfo(saved);
+      Alert.alert('저장 완료', '장소 정보 설정이 수정되었습니다.');
+      setPlaceSettingVisible(false);
+    } catch (error) {
+      Alert.alert('저장 실패', '백엔드 서버 연결을 확인해주세요.');
+    }
   };
 
   const sections = [
@@ -177,6 +206,13 @@ export default function Settings() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.placeScrollContent}
         >
+          {placeInfoLoadError.length > 0 && (
+            <View style={styles.errorBox}>
+              <Ionicons name="warning-outline" size={20} color="#D0453B" />
+              <Text style={styles.errorText}>{placeInfoLoadError}</Text>
+            </View>
+          )}
+
           <View style={styles.stepTabs}>
             {[1, 2, 3, 4, 5].map((step) => (
               <TouchableOpacity
@@ -716,6 +752,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 120,
+  },
+
+  errorBox: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFF1F1',
+    borderWidth: 1,
+    borderColor: '#F3CFCF',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#D0453B',
   },
 
   stepTabs: {

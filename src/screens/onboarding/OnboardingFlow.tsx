@@ -7,6 +7,7 @@ import {
   TextInput,
   Modal,
   Pressable,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,11 +16,22 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { EventSettings, saveOnboardingSettings } from '../../services/api';
 
 const TEAL = '#55CCC4';
 const DARK = '#111827';
 const PLACE_COUNT = 10;
 const MAP_URL = 'https://generous-maternity-smugness.ngrok-free.dev/map.html';
+
+const createInitialPlaceInfo = (): EventSettings => ({
+  eventRange: '',
+  searchPlace: '',
+  placeDisplayName: '',
+  cctvLocations: Array.from({ length: PLACE_COUNT }, (_, index) => `${index + 1}번 CCTV`),
+  placeNames: Array.from({ length: PLACE_COUNT }, (_, index) => `${index + 1}번 장소`),
+  roadAngles: Array.from({ length: PLACE_COUNT }, () => ''),
+  roadAreas: Array.from({ length: PLACE_COUNT }, () => ''),
+});
 
 function Progress({ step }: { step: number }) {
   return (
@@ -88,8 +100,42 @@ export default function OnboardingFlow({ navigation }: any) {
   const [step, setStep] = useState(1);
   const [selectedNumber, setSelectedNumber] = useState(1);
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const [placeInfo, setPlaceInfo] = useState<EventSettings>(createInitialPlaceInfo);
+  const [saving, setSaving] = useState(false);
   const { height } = useWindowDimensions();
   const mapHeight = Math.max(220, Math.min(360, height * 0.38));
+  const selectedIndex = selectedNumber - 1;
+
+  const updateArrayValue = (
+    key: 'cctvLocations' | 'placeNames' | 'roadAngles' | 'roadAreas',
+    value: string,
+  ) => {
+    setPlaceInfo((prev) => {
+      const updated = [...prev[key]];
+      updated[selectedIndex] = value;
+
+      return {
+        ...prev,
+        [key]: updated,
+      };
+    });
+  };
+
+  const finishOnboarding = async () => {
+    try {
+      setSaving(true);
+      await saveOnboardingSettings({
+        ...placeInfo,
+        placeDisplayName: placeInfo.placeDisplayName || placeInfo.searchPlace,
+        eventRange: placeInfo.eventRange || placeInfo.searchPlace,
+      });
+      navigation.replace('MainTabs');
+    } catch (error) {
+      Alert.alert('저장 실패', '초기 설정을 저장하지 못했습니다. 백엔드 서버 연결을 확인해주세요.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const goNext = () => {
     if (step < 5) {
@@ -125,9 +171,10 @@ export default function OnboardingFlow({ navigation }: any) {
 
           <TouchableOpacity
             style={styles.completeButton}
-            onPress={() => navigation.replace('MainTabs')}
+            onPress={finishOnboarding}
+            disabled={saving}
           >
-            <Text style={styles.primaryBtnText}>다음</Text>
+            <Text style={styles.primaryBtnText}>{saving ? '저장 중...' : '다음'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -160,6 +207,14 @@ export default function OnboardingFlow({ navigation }: any) {
               <View style={styles.searchBox}>
                 <TextInput
                   style={styles.searchInput}
+                  value={placeInfo.searchPlace}
+                  onChangeText={(text) =>
+                    setPlaceInfo((prev) => ({
+                      ...prev,
+                      searchPlace: text,
+                      placeDisplayName: prev.placeDisplayName || text,
+                    }))
+                  }
                   placeholder="장소를 검색하세요"
                   placeholderTextColor="#8B95A1"
                 />
@@ -167,6 +222,19 @@ export default function OnboardingFlow({ navigation }: any) {
               </View>
 
               <MapViewBox height={mapHeight} />
+
+              <TextInput
+                style={styles.largeInput}
+                value={placeInfo.eventRange}
+                onChangeText={(text) =>
+                  setPlaceInfo((prev) => ({
+                    ...prev,
+                    eventRange: text,
+                  }))
+                }
+                placeholder="행사 장소 범위를 입력하세요"
+                placeholderTextColor="#8B95A1"
+              />
 
               <View style={styles.bottomBar}>
                 <TouchableOpacity style={styles.fullButton} onPress={goNext}>
@@ -178,10 +246,18 @@ export default function OnboardingFlow({ navigation }: any) {
 
           {step === 2 && (
             <>
+              <NumberTabs
+                count={PLACE_COUNT}
+                selected={selectedNumber}
+                onSelect={setSelectedNumber}
+              />
+
               <View style={styles.searchBox}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="장소를 검색하세요"
+                  value={placeInfo.cctvLocations[selectedIndex]}
+                  onChangeText={(text) => updateArrayValue('cctvLocations', text)}
+                  placeholder="CCTV 이름 또는 위치를 입력하세요"
                   placeholderTextColor="#8B95A1"
                 />
                 <Ionicons name="search-outline" size={28} color="#8B95A1" />
@@ -211,8 +287,8 @@ export default function OnboardingFlow({ navigation }: any) {
 
               <TextInput
                 style={styles.largeInput}
-                value={`${selectedNumber}번 장소`}
-                onChangeText={() => {}}
+                value={placeInfo.placeNames[selectedIndex]}
+                onChangeText={(text) => updateArrayValue('placeNames', text)}
               />
 
               <MapViewBox height={mapHeight} />
@@ -239,6 +315,8 @@ export default function OnboardingFlow({ navigation }: any) {
 
               <TextInput
                 style={styles.largeInput}
+                value={placeInfo.roadAngles[selectedIndex]}
+                onChangeText={(text) => updateArrayValue('roadAngles', text)}
                 placeholder="각도를 입력하세요 (예: 90°)"
                 placeholderTextColor="#8B95A1"
               />
@@ -271,6 +349,8 @@ export default function OnboardingFlow({ navigation }: any) {
 
               <TextInput
                 style={styles.largeInput}
+                value={placeInfo.roadAreas[selectedIndex]}
+                onChangeText={(text) => updateArrayValue('roadAreas', text)}
                 placeholder="면적을 입력하세요 (예: 120㎡)"
                 placeholderTextColor="#8B95A1"
                 keyboardType="numeric"

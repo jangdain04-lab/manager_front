@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { Colors } from '../../components/Colors';
+import { fetchRiskPredictions } from '../../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -270,6 +271,43 @@ function PredictionChart({
 
 export default function RiskPrediction({ navigation }: any) {
   const [expandedId, setExpandedId] = useState<string | null>('1');
+  const [predictions, setPredictions] = useState<PredictionItem[]>(PREDICTIONS);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPredictions = async () => {
+      try {
+        const serverPredictions = await fetchRiskPredictions();
+
+        if (!mounted || serverPredictions.length === 0) return;
+
+        setPredictions(
+          serverPredictions.map((item) => ({
+            id: item.id,
+            sector: item.sector,
+            time: item.time,
+            level: item.level,
+            progress: item.progress,
+            icon: item.icon as keyof typeof Ionicons.glyphMap,
+            values: item.values,
+          })),
+        );
+
+        setExpandedId((current) => current ?? serverPredictions[0]?.id ?? null);
+      } catch (error) {
+        console.warn('Failed to load risk predictions', error);
+      }
+    };
+
+    loadPredictions();
+    const timer = setInterval(loadPredictions, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -291,7 +329,7 @@ export default function RiskPrediction({ navigation }: any) {
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>위험 예측 그래프</Text>
 
-        {PREDICTIONS.map(item => {
+        {predictions.map(item => {
           const color = getLevelColor(item.level);
 
           return (

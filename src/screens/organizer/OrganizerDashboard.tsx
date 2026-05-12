@@ -10,7 +10,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
-import { fetchZonesLive } from '../../services/api';
+import {
+  createNotice,
+  deleteNotice,
+  fetchNotices,
+  fetchZonesLive,
+  Notice,
+  updateNotice,
+} from '../../services/api';
 
 const COLORS = {
   primary: '#55CCC4',
@@ -36,13 +43,6 @@ type Prediction = {
   place: string;
   level: RiskLevel;
   subtitle: string;
-};
-
-type Notice = {
-  id: number;
-  title: string;
-  content: string;
-  createdAt: string;
 };
 
 const registeredPlaces: Place[] = [
@@ -102,6 +102,7 @@ export default function OrganizerDashboard({ navigation }: any) {
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeContent, setNoticeContent] = useState('');
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
+  const [savingNotice, setSavingNotice] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -125,7 +126,20 @@ export default function OrganizerDashboard({ navigation }: any) {
       }
     };
 
+    const loadNotices = async () => {
+      try {
+        const serverNotices = await fetchNotices();
+
+        if (!mounted) return;
+
+        setNotices(serverNotices);
+      } catch (error) {
+        console.warn('Failed to load notices', error);
+      }
+    };
+
     loadZones();
+    loadNotices();
     const timer = setInterval(loadZones, 5000);
 
     return () => {
@@ -151,46 +165,44 @@ export default function OrganizerDashboard({ navigation }: any) {
     setEditingNoticeId(null);
   };
 
-  const handleSaveNotice = () => {
+  const handleSaveNotice = async () => {
     if (!noticeTitle.trim() || !noticeContent.trim()) {
       Alert.alert('입력 필요', '공지 제목과 내용을 모두 입력해주세요.');
       return;
     }
 
-    if (editingNoticeId) {
-      setNotices((prev) =>
-        prev.map((notice) =>
-          notice.id === editingNoticeId
-            ? {
-                ...notice,
-                title: noticeTitle.trim(),
-                content: noticeContent.trim(),
-              }
-            : notice,
-        ),
-      );
+    try {
+      setSavingNotice(true);
 
-      Alert.alert('수정 완료', '공지사항이 수정되었습니다.');
-    } else {
-      const now = new Date();
-      const createdAt = `${now.getFullYear()}.${String(
-        now.getMonth() + 1,
-      ).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(
-        now.getHours(),
-      ).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (editingNoticeId) {
+        const savedNotice = await updateNotice(editingNoticeId, {
+          title: noticeTitle.trim(),
+          content: noticeContent.trim(),
+        });
 
-      const newNotice: Notice = {
-        id: Date.now(),
-        title: noticeTitle.trim(),
-        content: noticeContent.trim(),
-        createdAt,
-      };
+        setNotices((prev) =>
+          prev.map((notice) =>
+            notice.id === editingNoticeId ? savedNotice : notice,
+          ),
+        );
 
-      setNotices((prev) => [newNotice, ...prev]);
-      Alert.alert('등록 완료', '공지사항이 등록되었습니다.');
+        Alert.alert('수정 완료', '공지사항이 수정되었습니다.');
+      } else {
+        const newNotice = await createNotice({
+          title: noticeTitle.trim(),
+          content: noticeContent.trim(),
+        });
+
+        setNotices((prev) => [newNotice, ...prev]);
+        Alert.alert('등록 완료', '공지사항이 등록되었습니다.');
+      }
+
+      resetNoticeForm();
+    } catch (error) {
+      Alert.alert('저장 실패', '공지사항을 저장하지 못했습니다.');
+    } finally {
+      setSavingNotice(false);
     }
-
-    resetNoticeForm();
   };
 
   const handleEditNotice = (notice: Notice) => {
@@ -205,11 +217,16 @@ export default function OrganizerDashboard({ navigation }: any) {
       {
         text: '삭제',
         style: 'destructive',
-        onPress: () => {
-          setNotices((prev) => prev.filter((notice) => notice.id !== noticeId));
+        onPress: async () => {
+          try {
+            await deleteNotice(noticeId);
+            setNotices((prev) => prev.filter((notice) => notice.id !== noticeId));
 
-          if (editingNoticeId === noticeId) {
-            resetNoticeForm();
+            if (editingNoticeId === noticeId) {
+              resetNoticeForm();
+            }
+          } catch (error) {
+            Alert.alert('삭제 실패', '공지사항을 삭제하지 못했습니다.');
           }
         },
       },
@@ -282,6 +299,7 @@ export default function OrganizerDashboard({ navigation }: any) {
                 activeOpacity={0.85}
                 style={styles.saveNoticeButton}
                 onPress={handleSaveNotice}
+                disabled={savingNotice}
               >
                 <Ionicons
                   name={editingNoticeId ? 'checkmark-outline' : 'send-outline'}
@@ -289,7 +307,7 @@ export default function OrganizerDashboard({ navigation }: any) {
                   color="#FFFFFF"
                 />
                 <Text style={styles.saveNoticeButtonText}>
-                  {editingNoticeId ? '수정 완료' : '공지 등록'}
+                  {savingNotice ? '저장 중...' : editingNoticeId ? '수정 완료' : '공지 등록'}
                 </Text>
               </TouchableOpacity>
             </View>

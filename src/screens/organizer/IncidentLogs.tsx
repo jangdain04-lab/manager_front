@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,24 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../components/Colors';
-
-interface IncidentLog {
-  id: string;
-  time: string;
-  date: string;
-  sector: string;
-  gate: string;
-  level: 'critical';
-  density: number;
-  duration: string;
-  description: string;
-  image: string;
-  stats: {
-    time: string;
-    density: number;
-    speedChange: number;
-  }[];
-}
+import { fetchIncidents, IncidentLog } from '../../services/api';
 
 const INCIDENTS: IncidentLog[] = [
   {
@@ -101,10 +84,42 @@ export default function IncidentLogs() {
   const [selectedDate, setSelectedDate] = useState('2026.04.08');
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<IncidentLog | null>(null);
+  const [incidents, setIncidents] = useState<IncidentLog[]>(INCIDENTS);
 
-  const dates = Array.from(new Set(INCIDENTS.map((inc) => inc.date)));
+  useEffect(() => {
+    let mounted = true;
 
-  const filtered = INCIDENTS.filter((inc) => {
+    const loadIncidents = async () => {
+      try {
+        const serverIncidents = await fetchIncidents();
+
+        if (!mounted || serverIncidents.length === 0) return;
+
+        setIncidents(serverIncidents);
+        setSelectedDate((currentDate) => {
+          const dates = Array.from(new Set(serverIncidents.map((inc) => inc.date)));
+          return dates.includes(currentDate) ? currentDate : dates[0] ?? currentDate;
+        });
+      } catch (error) {
+        console.warn('Failed to load incidents', error);
+      }
+    };
+
+    loadIncidents();
+    const timer = setInterval(loadIncidents, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const dates = useMemo(
+    () => Array.from(new Set(incidents.map((inc) => inc.date))),
+    [incidents],
+  );
+
+  const filtered = incidents.filter((inc) => {
     const matchesDate = inc.date === selectedDate;
     const matchesSearch =
       !search ||

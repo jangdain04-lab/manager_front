@@ -7,11 +7,18 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../../components/Colors';
-import { fetchZonesLive } from '../../services/api';
+import {
+  assignStaffToZone,
+  createStaff,
+  fetchStaff,
+  fetchZonesLive,
+  StaffMember,
+} from '../../services/api';
 
 const THEME = {
   primary: '#55CCC4',
@@ -25,13 +32,18 @@ const THEME = {
 const MAP_URL = 'https://generous-maternity-smugness.ngrok-free.dev/map.html';
 
 type Staff = {
+  id?: number;
   name: string;
   role: string;
   sector: string;
+  phone?: string | null;
+  email?: string | null;
+  zoneId?: string | null;
 };
 
 type Sector = {
   id: number;
+  zoneId?: string;
   title: string;
   count: number;
   status: 'danger' | 'safe' | 'warning';
@@ -141,9 +153,47 @@ export default function SectorMonitoring() {
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('summary');
+  const [staffList, setStaffList] = useState<Staff[]>(allStaff);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('안전관리');
+  const [newStaffPhone, setNewStaffPhone] = useState('');
+  const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffZoneId, setNewStaffZoneId] = useState('');
+  const [savingStaff, setSavingStaff] = useState(false);
 
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ?? null;
+
+  const toScreenStaff = (staff: StaffMember): Staff => ({
+    id: staff.id,
+    name: staff.name,
+    role: staff.role,
+    sector: staff.sector ?? '미배치',
+    phone: staff.phone,
+    email: staff.email,
+    zoneId: staff.zone_id,
+  });
+
+  const loadStaff = async () => {
+    try {
+      const staff = await fetchStaff();
+      const mappedStaff = staff.map(toScreenStaff);
+
+      setStaffList(mappedStaff);
+      setSectors((prev) =>
+        prev.map((sector) => ({
+          ...sector,
+          people: mappedStaff.filter(
+            (person) =>
+              person.zoneId === sector.zoneId ||
+              person.sector === sector.title,
+          ),
+        })),
+      );
+    } catch (error) {
+      console.warn('Failed to load staff', error);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -164,6 +214,7 @@ export default function SectorMonitoring() {
 
             return {
               id: Number.isNaN(Number(zone.zone_id)) ? index + 1 : Number(zone.zone_id),
+              zoneId: zone.zone_id,
               title: zone.name,
               count: zone.count,
               status: zone.status,
@@ -177,6 +228,7 @@ export default function SectorMonitoring() {
     };
 
     loadZones();
+    loadStaff();
     const timer = setInterval(loadZones, 5000);
 
     return () => {
@@ -185,25 +237,56 @@ export default function SectorMonitoring() {
     };
   }, []);
 
-  const addStaffToSector = (staff: Staff) => {
+  const addStaffToSector = async (staff: Staff) => {
     if (!selectedSector) return;
+    if (!staff.id || !selectedSector.zoneId) return;
 
     const alreadyAdded = selectedSector.people.some(
-      (person) => person.name === staff.name
+      (person) => person.id === staff.id || person.name === staff.name
     );
 
     if (alreadyAdded) return;
 
-    setSectors((prev) =>
-      prev.map((sector) =>
-        sector.id === selectedSector.id
-          ? {
-              ...sector,
-              people: [...sector.people, { ...staff, sector: selectedSector.title }],
-            }
-          : sector
-      )
-    );
+    try {
+      await assignStaffToZone(staff.id, selectedSector.zoneId);
+      await loadStaff();
+    } catch (error) {
+      Alert.alert('배치 실패', '직원 배치를 저장하지 못했습니다.');
+    }
+  };
+
+  const resetStaffForm = () => {
+    setNewStaffName('');
+    setNewStaffRole('안전관리');
+    setNewStaffPhone('');
+    setNewStaffEmail('');
+    setNewStaffZoneId('');
+  };
+
+  const handleCreateStaff = async () => {
+    if (!newStaffName.trim()) {
+      Alert.alert('입력 필요', '직원 이름을 입력해주세요.');
+      return;
+    }
+
+    try {
+      setSavingStaff(true);
+      await createStaff({
+        name: newStaffName.trim(),
+        role: newStaffRole.trim() || '안전관리',
+        phone: newStaffPhone.trim(),
+        email: newStaffEmail.trim(),
+        zone_id: newStaffZoneId || undefined,
+      });
+      await loadStaff();
+      resetStaffForm();
+      setAddModalVisible(false);
+      Alert.alert('등록 완료', '직원이 등록되었습니다.');
+    } catch (error) {
+      Alert.alert('등록 실패', '직원 정보를 저장하지 못했습니다.');
+    } finally {
+      setSavingStaff(false);
+    }
   };
 
   if (selectedSector) {
@@ -273,9 +356,9 @@ export default function SectorMonitoring() {
             />
           </View>
 
-          {allStaff.map((staff, index) => {
+          {staffList.map((staff, index) => {
             const alreadyAdded = selectedSector.people.some(
-              (person) => person.name === staff.name
+              (person) => person.id === staff.id || person.name === staff.name
             );
 
             return (
@@ -648,18 +731,26 @@ export default function SectorMonitoring() {
             <Text style={styles.inputLabel}>이름</Text>
             <TextInput
               style={styles.input}
+              value={newStaffName}
+              onChangeText={setNewStaffName}
               placeholder="이름을 입력하세요"
               placeholderTextColor="#B6BEC9"
             />
 
             <Text style={styles.inputLabel}>역할</Text>
-            <TouchableOpacity activeOpacity={0.8} style={styles.selectInput}>
-              <Text style={styles.selectText}>역할 선택</Text>
-            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              value={newStaffRole}
+              onChangeText={setNewStaffRole}
+              placeholder="예: 안전관리"
+              placeholderTextColor="#B6BEC9"
+            />
 
             <Text style={styles.inputLabel}>전화번호</Text>
             <TextInput
               style={styles.input}
+              value={newStaffPhone}
+              onChangeText={setNewStaffPhone}
               placeholder="010-0000-0000"
               placeholderTextColor="#B6BEC9"
               keyboardType="phone-pad"
@@ -668,21 +759,49 @@ export default function SectorMonitoring() {
             <Text style={styles.inputLabel}>이메일</Text>
             <TextInput
               style={styles.input}
+              value={newStaffEmail}
+              onChangeText={setNewStaffEmail}
               placeholder="example@email.com"
               placeholderTextColor="#B6BEC9"
               keyboardType="email-address"
             />
 
             <Text style={styles.inputLabel}>초기 배치 섹터</Text>
-            <TouchableOpacity activeOpacity={0.8} style={styles.selectInput}>
-              <Text style={styles.selectText}>섹터 선택</Text>
-            </TouchableOpacity>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.zoneSelectRow}
+            >
+              {sectors.map((sector) => (
+                <TouchableOpacity
+                  key={sector.zoneId ?? sector.id}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.zoneSelectChip,
+                    newStaffZoneId === sector.zoneId && styles.zoneSelectChipActive,
+                  ]}
+                  onPress={() => setNewStaffZoneId(sector.zoneId ?? '')}
+                >
+                  <Text
+                    style={[
+                      styles.zoneSelectText,
+                      newStaffZoneId === sector.zoneId && styles.zoneSelectTextActive,
+                    ]}
+                  >
+                    {sector.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={styles.cancelButton}
-                onPress={() => setAddModalVisible(false)}
+                onPress={() => {
+                  resetStaffForm();
+                  setAddModalVisible(false);
+                }}
               >
                 <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
@@ -690,9 +809,12 @@ export default function SectorMonitoring() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={styles.registerButton}
-                onPress={() => setAddModalVisible(false)}
+                onPress={handleCreateStaff}
+                disabled={savingStaff}
               >
-                <Text style={styles.registerButtonText}>직원 등록</Text>
+                <Text style={styles.registerButtonText}>
+                  {savingStaff ? '등록 중...' : '직원 등록'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1358,21 +1480,35 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  selectInput: {
-    height: 62,
+  zoneSelectRow: {
+    gap: 8,
+    paddingBottom: 18,
+  },
+
+  zoneSelectChip: {
+    minHeight: 44,
     borderRadius: 14,
     backgroundColor: '#F8F9FB',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
+    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
   },
 
-  selectText: {
-    fontSize: 16,
-    fontWeight: '700',
+  zoneSelectChipActive: {
+    backgroundColor: THEME.primaryLight,
+    borderColor: THEME.primary,
+  },
+
+  zoneSelectText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: THEME.dark,
+  },
+
+  zoneSelectTextActive: {
+    color: THEME.primary,
   },
 
   modalButtonRow: {
