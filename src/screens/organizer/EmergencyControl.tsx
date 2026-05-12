@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../components/Colors';
+import { fetchZonesLive, sendEmergencyAlert } from '../../services/api';
 
 type TargetMode = 'zone' | 'all';
 type MessageType = 'evacuate' | 'warning' | 'custom';
@@ -70,6 +71,36 @@ export default function EmergencyControl() {
   const [selectedMessage, setSelectedMessage] = useState<MessageType>('custom');
   const [selectedZones, setSelectedZones] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState('');
+  const [zones, setZones] = useState(ZONES);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadZones = async () => {
+      try {
+        const liveZones = await fetchZonesLive();
+
+        if (!mounted || liveZones.length === 0) return;
+
+        setZones(
+          liveZones.map((zone) => ({
+            name: zone.name,
+            status: zone.status,
+          })),
+        );
+      } catch (error) {
+        console.warn('Failed to load alert zones', error);
+      }
+    };
+
+    loadZones();
+    const timer = setInterval(loadZones, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   const toggleZone = (zoneName: string) => {
     setSelectedZones((prev) =>
@@ -87,7 +118,7 @@ export default function EmergencyControl() {
     }
   };
 
-  const sendAlert = (messageType: MessageType) => {
+  const sendAlert = async (messageType: MessageType) => {
     const messageInfo = MESSAGES.find((message) => message.id === messageType);
 
     if (!messageInfo) return;
@@ -112,10 +143,21 @@ export default function EmergencyControl() {
         ? customMessage.trim()
         : messageInfo.desc;
 
-    Alert.alert(
-      '알림 전송 완료',
-      `[대상]\n${targetText}\n\n[메시지]\n${messageText}`
-    );
+    try {
+      await sendEmergencyAlert({
+        target_mode: targetMode,
+        target_zones: selectedZones,
+        message_type: messageType,
+        message: messageText,
+      });
+
+      Alert.alert(
+        '알림 전송 완료',
+        `[대상]\n${targetText}\n\n[메시지]\n${messageText}`
+      );
+    } catch (error) {
+      Alert.alert('전송 실패', '백엔드 서버 연결을 확인해주세요.');
+    }
   };
 
   return (
@@ -188,7 +230,7 @@ export default function EmergencyControl() {
               </View>
 
               <View style={styles.zoneGrid}>
-                {ZONES.map((zone) => {
+                {zones.map((zone) => {
                   const selected = selectedZones.includes(zone.name);
 
                   return (

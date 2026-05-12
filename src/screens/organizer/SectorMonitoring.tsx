@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { Colors } from '../../components/Colors';
+import { fetchZonesLive } from '../../services/api';
 
 const THEME = {
   primary: '#55CCC4',
@@ -143,6 +144,46 @@ export default function SectorMonitoring() {
 
   const selectedSector =
     sectors.find((sector) => sector.id === selectedSectorId) ?? null;
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadZones = async () => {
+      try {
+        const liveZones = await fetchZonesLive();
+
+        if (!mounted || liveZones.length === 0) return;
+
+        setSectors((prev) =>
+          liveZones.map((zone, index) => {
+            const existing = prev.find(
+              (sector) =>
+                sector.title === zone.name ||
+                String(sector.id) === zone.zone_id,
+            );
+
+            return {
+              id: Number.isNaN(Number(zone.zone_id)) ? index + 1 : Number(zone.zone_id),
+              title: zone.name,
+              count: zone.count,
+              status: zone.status,
+              people: existing?.people ?? [],
+            };
+          }),
+        );
+      } catch (error) {
+        console.warn('Failed to load sector zones', error);
+      }
+    };
+
+    loadZones();
+    const timer = setInterval(loadZones, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   const addStaffToSector = (staff: Staff) => {
     if (!selectedSector) return;

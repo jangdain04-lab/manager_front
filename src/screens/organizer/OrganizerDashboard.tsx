@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
+import { fetchZonesLive } from '../../services/api';
 
 const COLORS = {
   primary: '#55CCC4',
@@ -96,10 +97,42 @@ function getLevelBackground(level: RiskLevel) {
 
 export default function OrganizerDashboard({ navigation }: any) {
   const [noticeMode, setNoticeMode] = useState(false);
+  const [places, setPlaces] = useState<Place[]>(registeredPlaces);
   const [notices, setNotices] = useState<Notice[]>(initialNotices);
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeContent, setNoticeContent] = useState('');
   const [editingNoticeId, setEditingNoticeId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadZones = async () => {
+      try {
+        const zones = await fetchZonesLive();
+
+        if (!mounted || zones.length === 0) return;
+
+        setPlaces(
+          zones.map((zone, index) => ({
+            id: index + 1,
+            name: zone.name,
+            count: zone.count,
+            level: zone.status,
+          })),
+        );
+      } catch (error) {
+        console.warn('Failed to load live zones', error);
+      }
+    };
+
+    loadZones();
+    const timer = setInterval(loadZones, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   const goToStaffTab = () => {
     navigation.dispatch(
@@ -351,7 +384,7 @@ export default function OrganizerDashboard({ navigation }: any) {
 
       <View style={styles.heatmapContainer}>
         <View style={styles.heatmapGrid}>
-          {registeredPlaces.map((place) => (
+          {places.map((place) => (
             <View
               key={place.id}
               style={[

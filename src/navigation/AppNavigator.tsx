@@ -28,6 +28,7 @@ const COLORS = {
 function MainTabs() {
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
@@ -74,7 +75,7 @@ function MainTabs() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingFlow} />
